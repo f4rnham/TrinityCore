@@ -1,5 +1,7 @@
 
 build*/
+bin/
+debug/
 .directory
 .mailmap
 *.orig
@@ -9,7 +11,27 @@ build*/
 *.kdev*
 *.bak
 *.patch
+*.obj
+*.*build*
+*.rule
+*.ipch
+*.sln
+*.*sdf
+*.dep
 *.diff
+*.bin
+*.exe
+*.dll*
+*.ilk
+*.pdb
+*.user
+*.manifest
+*.*stamp*
+*.log
+*.vcxproj*
+*.tlog
+*.exp
+*.lib
 *.REMOTE.*
 *.BACKUP.*
 *.BASE.*
