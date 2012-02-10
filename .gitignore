@@ -16,6 +16,7 @@ debug/
 *.rule
 *.ipch
 *.sln
+*.suo
 *.*sdf
 *.dep
 *.diff
