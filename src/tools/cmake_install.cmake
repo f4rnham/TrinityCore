@@ -30,8 +30,8 @@ ENDIF(NOT CMAKE_INSTALL_COMPONENT)
 IF(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
   INCLUDE("D:/trinity/live/src/tools/map_extractor/cmake_install.cmake")
-  INCLUDE("D:/trinity/live/src/tools/vmap3_assembler/cmake_install.cmake")
-  INCLUDE("D:/trinity/live/src/tools/vmap3_extractor/cmake_install.cmake")
+  INCLUDE("D:/trinity/live/src/tools/vmap4_assembler/cmake_install.cmake")
+  INCLUDE("D:/trinity/live/src/tools/vmap4_extractor/cmake_install.cmake")
 
 ENDIF(NOT CMAKE_INSTALL_LOCAL_ONLY)
 

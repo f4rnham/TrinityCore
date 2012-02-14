@@ -13,7 +13,7 @@ D:/trinity/live/dep/libmpq/CMakeFiles/mpq.dir
 D:/trinity/live/src/genrev/CMakeFiles/revision.h.dir
 D:/trinity/live/src/server/scripts/CMakeFiles/scripts.dir
 D:/trinity/live/src/server/shared/CMakeFiles/shared.dir
-D:/trinity/live/src/tools/vmap3_assembler/CMakeFiles/vmap3assembler.dir
-D:/trinity/live/src/tools/vmap3_extractor/CMakeFiles/vmap3extractor.dir
+D:/trinity/live/src/tools/vmap4_assembler/CMakeFiles/vmap4assembler.dir
+D:/trinity/live/src/tools/vmap4_extractor/CMakeFiles/vmap4extractor.dir
 D:/trinity/live/src/server/worldserver/CMakeFiles/worldserver.dir
 D:/trinity/live/dep/zlib/CMakeFiles/zlib.dir
