@@ -781,6 +781,53 @@ class npc_hyldsmeet_protodrake : public CreatureScript
         }
 };
 
+//visual of detonation is bugged when casted from mine - gobj type trap
+enum mine_sweeper
+{
+    MINE_SWEEPER_AURA  = 57099,
+    MINE_SWEEPER_CHECK = 57064,
+    KNOCK              = 40191,
+    DETONATION         = 54355
+};
+
+class achievement_mine_sweeper : public AchievementCriteriaScript
+{
+public:
+    achievement_mine_sweeper() : AchievementCriteriaScript("achievement_mine_sweeper") { }
+
+    bool OnCheck(Player* player, Unit* /*target*/)
+    {
+        Aura* aura = player->GetAura(MINE_SWEEPER_AURA);
+        return aura && aura->GetStackAmount() > 9;
+    }
+};
+
+class npc_land_mine_bunny : public CreatureScript
+{
+public:
+    npc_land_mine_bunny() : CreatureScript("npc_land_mine_bunny") { }
+
+    struct npc_land_mine_bunnyAI : public ScriptedAI
+    {
+        npc_land_mine_bunnyAI(Creature* creature) : ScriptedAI(creature) {}
+
+        void UpdateAI(const uint32 diff)
+        {
+            Unit* player = me->GetOwner();
+            player->CastSpell(player, MINE_SWEEPER_AURA, false);
+            player->CastSpell(player, KNOCK, true);
+            player->CastSpell(player, MINE_SWEEPER_CHECK, false);
+
+            me->DisappearAndDie();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return new npc_land_mine_bunnyAI (creature);
+    }
+};
+
 void AddSC_storm_peaks()
 {
     new npc_agnetta_tyrsdottar;
@@ -794,4 +841,6 @@ void AddSC_storm_peaks()
     new npc_brunnhildar_prisoner;
     new npc_icefang;
     new npc_hyldsmeet_protodrake;
+    new npc_land_mine_bunny;
+    new achievement_mine_sweeper;
 }
