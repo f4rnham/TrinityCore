@@ -56,6 +56,7 @@ class SpellCastTargets;
 class UpdateMask;
 
 typedef std::deque<Mail*> PlayerMails;
+typedef std::map<uint32, bool> savedAutospellsMap;
 
 #define PLAYER_MAX_SKILLS           127
 #define PLAYER_MAX_DAILY_QUESTS     25
@@ -1374,6 +1375,8 @@ class Player : public Unit, public GridObject<Player>
         bool AddItem(uint32 itemId, uint32 count);
 
         uint32 m_stableSlots;
+
+        savedAutospellsMap m_savedAutospells;
 
         /*********************************************************/
         /***                    GOSSIP SYSTEM                  ***/

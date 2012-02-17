@@ -13907,6 +13907,14 @@ void CharmInfo::InitCharmCreateSpells()
                     if (spellInfo->Effects[i].TargetA.GetType() == TARGET_TYPE_UNIT_TARGET)
                         autocast = true;
 
+                //try to load saved state, overwrite everything other
+                if (m_unit->GetOwner() && m_unit->GetOwner()->ToPlayer())
+                {
+                   savedAutospellsMap::iterator itr = m_unit->GetOwner()->ToPlayer()->m_savedAutospells.find(spellId);
+                    if (itr != m_unit->GetOwner()->ToPlayer()->m_savedAutospells.end())
+                        autocast = itr->second;
+                }
+
                 if (autocast)
                 {
                     newstate = ACT_ENABLED;
@@ -13974,6 +13982,16 @@ void CharmInfo::ToggleCreatureAutocast(SpellInfo const* spellInfo, bool apply)
 {
     if (spellInfo->IsPassive())
         return;
+
+    //save or update saved state
+    if (m_unit->GetOwner() && m_unit->GetOwner()->ToPlayer())
+    {
+        savedAutospellsMap::iterator itr = m_unit->GetOwner()->ToPlayer()->m_savedAutospells.find(spellInfo->Id);
+        if (itr != m_unit->GetOwner()->ToPlayer()->m_savedAutospells.end())
+            itr->second = apply;
+        else
+            m_unit->GetOwner()->ToPlayer()->m_savedAutospells.insert(std::make_pair(spellInfo->Id, apply));
+    }
 
     for (uint32 x = 0; x < MAX_SPELL_CHARM; ++x)
         if (spellInfo->Id == m_charmspells[x].GetAction())
