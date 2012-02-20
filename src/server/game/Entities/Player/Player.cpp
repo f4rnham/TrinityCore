@@ -2444,6 +2444,8 @@ void Player::RegenerateAll()
         for (uint8 i = 0; i < MAX_RUNES; ++i)
             if (uint32 cd = GetRuneCooldown(i))
                 SetRuneCooldown(i, (cd > m_regenTimer) ? cd - m_regenTimer : 0);
+            else
+                Set2SRpassedTime(i, m_regenTimer);
 
     if (m_regenTimerCount >= 2000)
     {
@@ -23348,12 +23350,15 @@ uint32 Player::GetRuneBaseCooldown(uint8 index)
     uint8 rune = GetBaseRune(index);
     uint32 cooldown = RUNE_BASE_COOLDOWN;
 
+    // apply 2 second rule
+    cooldown -= m_runes->runes[index].passed2SR;
+    m_runes->runes[index].passed2SR = 0;
+
+    // apply cooldown reductions, e.g. from Unholy Presence
     AuraEffectList const& regenAura = GetAuraEffectsByType(SPELL_AURA_MOD_POWER_REGEN_PERCENT);
-    for (AuraEffectList::const_iterator i = regenAura.begin();i != regenAura.end(); ++i)
-    {
+    for (AuraEffectList::const_iterator i = regenAura.begin(); i != regenAura.end(); ++i)
         if ((*i)->GetMiscValue() == POWER_RUNE && (*i)->GetMiscValueB() == rune)
-            cooldown = cooldown*(100-(*i)->GetAmount())/100;
-    }
+            cooldown *= (100 - (*i)->GetAmount()) / 100;
 
     return cooldown;
 }

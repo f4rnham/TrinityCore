@@ -299,8 +299,9 @@ struct Areas
 
 enum RuneCooldowns
 {
-    RUNE_BASE_COOLDOWN  = 10000,
-    RUNE_MISS_COOLDOWN  = 1500,     // cooldown applied on runes when the spell misses
+    RUNE_BASE_COOLDOWN        = 10000,
+    RUNE_MISS_COOLDOWN        = 1500,     // cooldown applied on runes when the spell misses
+    MAX_2SR_COOLDOWN_REDUCION = 2000
 };
 
 enum RuneType
@@ -317,6 +318,7 @@ struct RuneInfo
     uint8 BaseRune;
     uint8 CurrentRune;
     uint32 Cooldown;
+    uint32 passed2SR; // how much cooldown will 2 second rule reduce
     AuraEffect const* ConvertAura;
 };
 
@@ -2448,6 +2450,7 @@ class Player : public Unit, public GridObject<Player>
         void SetBaseRune(uint8 index, RuneType baseRune) { m_runes->runes[index].BaseRune = baseRune; }
         void SetCurrentRune(uint8 index, RuneType currentRune) { m_runes->runes[index].CurrentRune = currentRune; }
         void SetRuneCooldown(uint8 index, uint32 cooldown) { m_runes->runes[index].Cooldown = cooldown; m_runes->SetRuneState(index, (cooldown == 0) ? true : false); }
+        void Set2SRpassedTime(uint8 index, uint32 cooldown) { m_runes->runes[index].passed2SR + cooldown > MAX_2SR_COOLDOWN_REDUCION ? m_runes->runes[index].passed2SR = MAX_2SR_COOLDOWN_REDUCION : m_runes->runes[index].passed2SR += cooldown; }
         void SetRuneConvertAura(uint8 index, AuraEffect const* aura) { m_runes->runes[index].ConvertAura = aura; }
         void AddRuneByAuraEffect(uint8 index, RuneType newType, AuraEffect const* aura) { SetRuneConvertAura(index, aura); ConvertRune(index, newType); }
         void RemoveRunesByAuraEffect(AuraEffect const* aura);
