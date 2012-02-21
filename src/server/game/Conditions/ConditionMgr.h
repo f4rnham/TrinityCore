@@ -48,7 +48,7 @@ enum ConditionTypes
     CONDITION_CLASS                 = 15,                   // class            0              0                  true if player's class is equal to class
     CONDITION_RACE                  = 16,                   // race             0              0                  true if player's race is equal to race
     CONDITION_ACHIEVEMENT           = 17,                   // achievement_id   0              0                  true if achievement is complete
-    CONDITION_SPELL_SCRIPT_TARGET   = 18,                   // SpellScriptTargetType, TargetEntry,            0
+    CONDITION_UNUSED_18             = 18,                   //
     CONDITION_UNUSED_19             = 19,                   //
     CONDITION_UNUSED_20             = 20,                   //
     CONDITION_UNUSED_21             = 21,                   //
@@ -87,12 +87,12 @@ enum ConditionSourceType
     CONDITION_SOURCE_TYPE_REFERENCE_LOOT_TEMPLATE        = 10,
     CONDITION_SOURCE_TYPE_SKINNING_LOOT_TEMPLATE         = 11,
     CONDITION_SOURCE_TYPE_SPELL_LOOT_TEMPLATE            = 12,
-    CONDITION_SOURCE_TYPE_SPELL_SCRIPT_TARGET            = 13,
+    CONDITION_SOURCE_TYPE_SPELL_IMPLICIT_TARGET          = 13,
     CONDITION_SOURCE_TYPE_GOSSIP_MENU                    = 14,
     CONDITION_SOURCE_TYPE_GOSSIP_MENU_OPTION             = 15,
     CONDITION_SOURCE_TYPE_CREATURE_TEMPLATE_VEHICLE      = 16,
     CONDITION_SOURCE_TYPE_SPELL                          = 17,
-    CONDITION_SOURCE_TYPE_UNUSED_18                      = 18,
+    CONDITION_SOURCE_TYPE_SPELL_CLICK_EVENT              = 18,
     CONDITION_SOURCE_TYPE_QUEST_ACCEPT                   = 19,
     CONDITION_SOURCE_TYPE_QUEST_SHOW_MARK                = 20,
     CONDITION_SOURCE_TYPE_VEHICLE_SPELL                  = 21,
@@ -167,12 +167,13 @@ struct Condition
         ConditionValue2    = 0;
         ConditionValue3    = 0;
         ReferenceId        = 0;
-        ErrorTextId          = 0;
+        ErrorTextId        = 0;
         ScriptId           = 0;
         NegativeCondition  = false;
     }
 
     bool Meets(ConditionSourceInfo& sourceInfo);
+    uint32 GetSearcherTypeMaskForCondition();
     bool isLoaded() const { return ConditionType > CONDITION_NONE || ReferenceId; }
     uint32 GetMaxAvailableConditionTargets();
 };
@@ -180,7 +181,7 @@ struct Condition
 typedef std::list<Condition*> ConditionList;
 typedef std::map<uint32, ConditionList> ConditionTypeContainer;
 typedef std::map<ConditionSourceType, ConditionTypeContainer> ConditionContainer;
-typedef std::map<uint32, ConditionTypeContainer> VehicleSpellConditionContainer;
+typedef std::map<uint32, ConditionTypeContainer> CreatureSpellConditionContainer;
 typedef std::map<std::pair<int32, uint32 /*SAI source_type*/>, ConditionTypeContainer> SmartEventConditionContainer;
 
 typedef std::map<uint32, ConditionList> ConditionReferenceContainer;//only used for references
@@ -198,46 +199,32 @@ class ConditionMgr
         bool isConditionTypeValid(Condition* cond);
         ConditionList GetConditionReferences(uint32 refId);
 
+        uint32 GetSearcherTypeMaskForConditionList(ConditionList const& conditions);
         bool IsObjectMeetToConditions(WorldObject* object, ConditionList const& conditions);
         bool IsObjectMeetToConditions(WorldObject* object1, WorldObject* object2, ConditionList const& conditions);
         bool IsObjectMeetToConditions(ConditionSourceInfo& sourceInfo, ConditionList const& conditions);
+        bool CanHaveSourceGroupSet(ConditionSourceType sourceType) const;
+        bool CanHaveSourceIdSet(ConditionSourceType sourceType) const;
         ConditionList GetConditionsForNotGroupedEntry(ConditionSourceType sourceType, uint32 entry);
+        ConditionList GetConditionsForSpellClickEvent(uint32 creatureId, uint32 spellId);
         ConditionList GetConditionsForSmartEvent(int32 entryOrGuid, uint32 eventId, uint32 sourceType);
-        ConditionList GetConditionsForVehicleSpell(uint32 creatureID, uint32 spellID);
+        ConditionList GetConditionsForVehicleSpell(uint32 creatureId, uint32 spellId);
 
     private:
         bool isSourceTypeValid(Condition* cond);
         bool addToLootTemplate(Condition* cond, LootTemplate* loot);
         bool addToGossipMenus(Condition* cond);
         bool addToGossipMenuItems(Condition* cond);
+        bool addToSpellImplicitTargetConditions(Condition* cond);
         bool IsObjectMeetToConditionList(ConditionSourceInfo& sourceInfo, ConditionList const& conditions);
-
-        bool isGroupable(ConditionSourceType sourceType) const
-        {
-            return (sourceType == CONDITION_SOURCE_TYPE_CREATURE_LOOT_TEMPLATE ||
-                    sourceType == CONDITION_SOURCE_TYPE_DISENCHANT_LOOT_TEMPLATE ||
-                    sourceType == CONDITION_SOURCE_TYPE_FISHING_LOOT_TEMPLATE ||
-                    sourceType == CONDITION_SOURCE_TYPE_GAMEOBJECT_LOOT_TEMPLATE ||
-                    sourceType == CONDITION_SOURCE_TYPE_ITEM_LOOT_TEMPLATE ||
-                    sourceType == CONDITION_SOURCE_TYPE_MAIL_LOOT_TEMPLATE ||
-                    sourceType == CONDITION_SOURCE_TYPE_MILLING_LOOT_TEMPLATE ||
-                    sourceType == CONDITION_SOURCE_TYPE_PICKPOCKETING_LOOT_TEMPLATE ||
-                    sourceType == CONDITION_SOURCE_TYPE_PROSPECTING_LOOT_TEMPLATE ||
-                    sourceType == CONDITION_SOURCE_TYPE_REFERENCE_LOOT_TEMPLATE ||
-                    sourceType == CONDITION_SOURCE_TYPE_SKINNING_LOOT_TEMPLATE ||
-                    sourceType == CONDITION_SOURCE_TYPE_SPELL_LOOT_TEMPLATE ||
-                    sourceType == CONDITION_SOURCE_TYPE_GOSSIP_MENU ||
-                    sourceType == CONDITION_SOURCE_TYPE_GOSSIP_MENU_OPTION ||
-                    sourceType == CONDITION_SOURCE_TYPE_VEHICLE_SPELL ||
-                    sourceType == CONDITION_SOURCE_TYPE_SMART_EVENT);
-        }
 
         void Clean(); // free up resources
         std::list<Condition*> AllocatedMemoryStore; // some garbage collection :)
 
         ConditionContainer                ConditionStore;
         ConditionReferenceContainer       ConditionReferenceStore;
-        VehicleSpellConditionContainer    VehicleSpellConditionStore;
+        CreatureSpellConditionContainer   VehicleSpellConditionStore;
+        CreatureSpellConditionContainer   SpellClickEventConditionStore;
         SmartEventConditionContainer      SmartEventConditionStore;
 };
 
