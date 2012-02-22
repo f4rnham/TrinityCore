@@ -1709,3 +1709,25 @@ void WorldSession::HandleInstanceLockResponse(WorldPacket& recvPacket)
 
     _player->SetPendingBind(0, 0);
 }
+
+void WorldSession::HandleLockoutExtend(WorldPacket& recv_data)
+{
+    sLog->outString("handling");
+    sLog->outString("cont %i",recv_data.contents());
+        uint32 mapID;
+        uint8 difficulty;
+    recv_data >> mapID;
+    sLog->outString("mapID %i",mapID);
+    recv_data >> difficulty;
+    sLog->outString("uint32 %i",difficulty);
+    uint8 a;
+        recv_data >> a;
+    sLog->outString("uint32 %i",a);
+        recv_data >> a;
+    sLog->outString("uint32 %i",a);
+
+    /*
+    GetPlayer();
+   _player;
+    */
+}
