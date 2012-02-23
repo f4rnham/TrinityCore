@@ -13991,11 +13991,18 @@ void CharmInfo::ToggleCreatureAutocast(SpellInfo const* spellInfo, bool apply)
     //save or update saved state
     if (m_unit->GetOwner() && m_unit->GetOwner()->ToPlayer())
     {
-        savedAutospellsMap::iterator itr = m_unit->GetOwner()->ToPlayer()->m_savedAutospells.find(spellInfo->Id);
-        if (itr != m_unit->GetOwner()->ToPlayer()->m_savedAutospells.end())
+        Player* player = m_unit->GetOwner()->ToPlayer();
+        savedAutospellsMap::iterator itr = player->m_savedAutospells.find(spellInfo->Id);
+        if (itr != player->m_savedAutospells.end())
+        {
             itr->second = apply;
+            CharacterDatabase.PExecute("UPDATE pet_charm_spell SET autocast = '%u' WHERE guid = '%u' AND spell = '%u'", apply, player->GetGUIDLow(), spellInfo->Id);
+        }
         else
-            m_unit->GetOwner()->ToPlayer()->m_savedAutospells.insert(std::make_pair(spellInfo->Id, apply));
+        {
+            player->m_savedAutospells.insert(std::make_pair(spellInfo->Id, apply));
+            CharacterDatabase.PExecute("INSERT INTO pet_charm_spell VALUES ('%u', '%u', '%u')", player->GetGUIDLow(), spellInfo->Id, apply);
+        }
     }
 
     for (uint32 x = 0; x < MAX_SPELL_CHARM; ++x)

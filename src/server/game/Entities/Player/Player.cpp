@@ -17206,6 +17206,18 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
 
     _LoadEquipmentSets(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOADEQUIPMENTSETS));
 
+    // temporary pet autocast state, move to own function?
+    QueryResult res = CharacterDatabase.PQuery("SELECT spell, autocast FROM pet_charm_spell WHERE guid = '%u'", GetGUIDLow());
+    if (res)
+    {
+        do
+        {
+            Field* fields = res->Fetch();
+            m_savedAutospells.insert(std::make_pair(fields[0].GetUInt32(), fields[1].GetBool()));
+        }
+        while (res->NextRow());
+    }
+
     return true;
 }
 
