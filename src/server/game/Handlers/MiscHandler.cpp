@@ -48,6 +48,7 @@
 #include "ScriptMgr.h"
 #include "MapManager.h"
 #include "InstanceScript.h"
+#include "InstanceSaveMgr.h"
 #include "GameObjectAI.h"
 #include "Group.h"
 #include "AccountMgr.h"
@@ -1712,22 +1713,23 @@ void WorldSession::HandleInstanceLockResponse(WorldPacket& recvPacket)
 
 void WorldSession::HandleLockoutExtend(WorldPacket& recv_data)
 {
-    sLog->outString("handling");
-    sLog->outString("cont %i",recv_data.contents());
-        uint32 mapID;
-        uint8 difficulty;
-    recv_data >> mapID;
+    uint16 mapID;
+    uint8 difficulty, extending, a, b, c, d, e;
+    recv_data >> mapID >> a >> b >> difficulty >> c >> d >> e >> extending;
+    //       mapID mapID  00   00   difficulty    00   00   00      0X
+    // X == 1 extending
+    // X == 0 remove extension
     sLog->outString("mapID %i",mapID);
-    recv_data >> difficulty;
-    sLog->outString("uint32 %i",difficulty);
-    uint8 a;
-        recv_data >> a;
-    sLog->outString("uint32 %i",a);
-        recv_data >> a;
-    sLog->outString("uint32 %i",a);
+    sLog->outString("uint8 %i %i",a,b);
+    sLog->outString("difficulty %i",difficulty);
+    sLog->outString("uint8 %i %i %i",c,d,e);
+    if (extending)
+        sLog->outString("extending %i",extending);
+    else
+        sLog->outString("removing extension %i",extending);
 
-    /*
-    GetPlayer();
-   _player;
-    */
+    InstancePlayerBind* bind = _player->GetBoundInstance(mapID, Difficulty(difficulty));
+    InstanceSave* save = bind->save;
+    save->HitExtendButton();
+
 }

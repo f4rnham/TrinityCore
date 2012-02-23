@@ -18231,7 +18231,7 @@ void Player::SendRaidInfo()
                 data << uint32(save->GetDifficulty());      // difficulty
                 data << uint64(save->GetInstanceId());      // instance id
                 data << uint8(1);                           // expired = 0
-                data << uint8(0);                           // extended = 1
+                data << uint8(save->IsExtended());          // extended = 1
                 data << uint32(save->GetResetTime() - now); // reset time
                 ++counter;
             }
