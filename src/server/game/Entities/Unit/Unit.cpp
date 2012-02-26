@@ -13910,12 +13910,9 @@ void CharmInfo::InitCharmCreateSpells()
                 newstate = ACT_PASSIVE;
             else
             {
-                bool autocast = false;
-                for (uint32 i = 0; i < MAX_SPELL_EFFECTS && !autocast; ++i)
-                    if (spellInfo->Effects[i].TargetA.GetType() == TARGET_TYPE_UNIT_TARGET)
-                        autocast = true;
+                bool autocast = spellInfo->NeedsExplicitUnitTarget();
 
-                //try to load saved state, overwrite everything other
+                //try to load saved state, overwrite default
                 if (m_unit->GetOwner() && m_unit->GetOwner()->ToPlayer())
                 {
                    savedAutospellsMap::iterator itr = m_unit->GetOwner()->ToPlayer()->m_savedAutospells.find(spellId);

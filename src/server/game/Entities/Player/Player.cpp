@@ -7945,10 +7945,19 @@ void Player::_ApplyItemBonuses(ItemTemplate const* proto, uint8 slot, bool apply
     if (CanUseAttackType(attType))
         _ApplyWeaponDamage(slot, proto, ssv, apply);
 
-   // Apply feral bonus from ScalingStatValue if set
-    if (ssv && getClass() == CLASS_DRUID)
+
+    // Druids get feral AP bonus from weapon dps (also use DPS from ScalingStatValue)
+    if (getClass() == CLASS_DRUID)
     {
-        int32 feral_bonus = ssv->getFeralBonus(proto->ScalingStatValue) + proto->getFeralBonus(ssv->getDPSMod(proto->ScalingStatValue));
+        int32 dpsMod = 0;
+        int32 feral_bonus = 0;
+        if (ssv)
+        {
+            dpsMod = ssv->getDPSMod(proto->ScalingStatValue);
+            feral_bonus += ssv->getFeralBonus(proto->ScalingStatValue);
+        }
+
+        feral_bonus += proto->getFeralBonus(dpsMod);
         if (feral_bonus)
             ApplyFeralAPBonus(feral_bonus, apply);
     }
@@ -18131,6 +18140,9 @@ void Player::UnbindInstance(BoundInstancesMap::iterator &itr, Difficulty difficu
         }
 
         itr->second.save->RemovePlayer(this);               // save can become invalid
+        if (itr->second.perm)
+            GetSession()->SendCalendarRaidLockout(itr->second.save, false);
+
         m_boundInstances[difficulty].erase(itr++);
     }
 }
@@ -18200,14 +18212,7 @@ void Player::BindToInstance()
     GetSession()->SendPacket(&data);
     BindToInstance(mapSave, true);
 
-    time_t currTime = time(NULL);
-    data.Initialize(SMSG_CALENDAR_RAID_LOCKOUT_ADDED, 4 + 4 + 4 + 4 + 8);
-    data << uint32(secsToTimeBitFields(currTime));
-    data << uint32(mapSave->GetMapId());
-    data << uint32(mapSave->GetDifficulty());
-    data << uint32(mapSave->GetResetTime() - currTime);
-    data << uint64(mapSave->GetInstanceId());
-    GetSession()->SendPacket(&data);
+    GetSession()->SendCalendarRaidLockout(mapSave, true);
 }
 
 void Player::SendRaidInfo()
@@ -20074,8 +20079,12 @@ void Player::RestoreSpellMods(Spell* spell, uint32 ownerAuraId, Aura* aura)
                 continue;
 
             // check if mod affected this spell
+            // first, check if the mod aura applied at least one spellmod to this spell
             Spell::UsedSpellMods::iterator iterMod = spell->m_appliedMods.find(mod->ownerAura);
             if (iterMod == spell->m_appliedMods.end())
+                continue;
+            // secondly, check if the current mod is one of the spellmods applied by the mod aura
+            if (!(mod->mask & spell->m_spellInfo->SpellFamilyFlags))
                 continue;
 
             // remove from list
