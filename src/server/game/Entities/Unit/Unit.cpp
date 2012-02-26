@@ -1530,12 +1530,19 @@ void Unit::CalcAbsorbResist(Unit* victim, SpellSchoolMask schoolMask, DamageEffe
     if ((schoolMask & SPELL_SCHOOL_MASK_NORMAL) == 0)
     {
         float victimResistance = float(victim->GetResistance(schoolMask));
-        victimResistance += float(GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_TARGET_RESISTANCE, schoolMask));
+
+        // use masters SPELL_AURA_MOD_TARGET_RESISTANCE and GetSpellPenetrationItemMod() in case of pet
+        Unit* source = this;
+        if (ToPet() && GetOwner() && GetOwner()->ToPlayer())
+            source = GetOwner()->ToPlayer();
+        victimResistance += float(source->GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_TARGET_RESISTANCE, schoolMask));
 
         if (Player* player = ToPlayer())
             victimResistance -= float(player->GetSpellPenetrationItemMod());
+        else if (source != this)
+            victimResistance -= float(GetOwner()->ToPlayer()->GetSpellPenetrationItemMod());
 
-        // Resistance can't be lower then 0.
+        // Resistance can't be lower than 0.
         if (victimResistance < 0.0f)
             victimResistance = 0.0f;
 

@@ -199,7 +199,7 @@ void WorldSession::HandleCalendarAddEvent(WorldPacket& recv_data)
     uint64 guid;
     uint8 status;
     uint8 rank;
-    for (int32 i = 0; i < inviteCount; ++i)
+    for (uint32 i = 0; i < inviteCount; ++i)
     {
         CalendarInvite invite;
         invite.Id = sCalendarMgr->GetNextInviteId();
