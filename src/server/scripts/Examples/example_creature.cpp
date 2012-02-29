@@ -286,9 +286,129 @@ class example_creature : public CreatureScript
         }
 };
 
+enum train_destroyer_enum
+{
+    SUMMON_TRAIN = 61031,
+    DESTROY_TRAIN = 62943,
+    TRAIN = 193963,
+};
+
+class train_destroyer : public CreatureScript
+{
+    public:
+
+        train_destroyer() : CreatureScript("train_destroyer") { }
+
+        struct train_destroyerAI : public ScriptedAI
+        {
+            train_destroyerAI(Creature* c) : ScriptedAI(c) {}
+
+            uint32 wait;
+            uint8 phase;
+            GameObject* train;
+            uint64 trainID;
+            Position trainPos;
+            float dist;
+            std::list <GameObject*> trains;
+
+            void Reset()
+            {
+                phase = 0;
+                wait = 0;
+                trainID = 0;
+            }
+
+            void UpdateAI(const uint32 diff)
+            {
+                trains.clear();
+                me->GetGameObjectListWithEntryInGrid(trains, TRAIN, 30.0);
+                if (!trains.empty())
+                {
+                    HandleTrains();
+                    if(trainID != train->GetGUID())
+                    {
+                        phase = 1;
+                        wait = 0;
+                    }
+                }
+                else
+                {
+                    phase = 0;
+                    wait = 0;
+                    return;
+                }
+
+                if (wait > diff)
+                {
+                    wait -= diff;
+                    return;
+                }
+
+                switch (phase)
+                {
+                    case 1:
+                        train->GetPosition(&trainPos);
+                        //me->MovePosition(trainPos, -2, 0);
+                        me->GetMotionMaster()->MovePoint( 0 , trainPos);
+                        //me->MovePosition( trainPos, dist, 0);
+                        trainID = train->GetGUID();
+                        phase++;
+                        break;
+                    case 2:
+                        if(!me->isMoving())
+                            phase++;
+                        break;
+                    case 3:
+                        me->GetMotionMaster()->MoveJump(train->GetPositionX(), train->GetPositionY(), train->GetPositionZ() , 1, 1);
+                        phase++;
+                        break;
+                    case 4:
+                        if(!me->isMoving())
+                            phase++;
+                        break;
+                    case 5:
+                        me->CastSpell(train, DESTROY_TRAIN, false);
+                        me->HandleEmoteCommand(EMOTE_ONESHOT_TRAIN);
+                        phase++;
+                        wait = 5000;
+                        break;
+                    case 6:
+                        me->HandleEmoteCommand(EMOTE_STATE_DANCE);
+                        phase++;
+                        wait = 15000;
+                    case 7:
+                        me->DisappearAndDie();
+                        train->Delete();
+                        break;
+                    default:
+                        break;
+                }
+            };
+
+            // choose closest one
+            void HandleTrains()
+            {
+                train = trains.front();
+                dist = me->GetDistance(train);
+                for (std::list <GameObject*>::iterator it = trains.begin(); it != trains.end(); ++it)
+                    if (me->GetDistance(*it) < dist)
+                    {
+                        dist = me->GetDistance(*it);
+                        train = *it;
+                    }
+            };
+        };
+
+        CreatureAI* GetAI(Creature* creature) const
+        {
+            return new train_destroyerAI(creature);
+        }
+};
+
 //This is the actual function called only once durring InitScripts()
 //It must define all handled functions that are to be run in this script
 void AddSC_example_creature()
 {
     new example_creature();
+    new train_destroyer();
 }
