@@ -1,0 +1,9 @@
+C:/Program Files (x86)/TrinityCore/ace.dll
+C:/Program Files (x86)/TrinityCore/libmysql.dll
+C:/Program Files (x86)/TrinityCore/authserver.exe
+C:/Program Files (x86)/TrinityCore/authserver.conf.dist
+C:/Program Files (x86)/TrinityCore/worldserver.exe
+C:/Program Files (x86)/TrinityCore/worldserver.conf.dist
+C:/Program Files (x86)/TrinityCore/mapextractor.exe
+C:/Program Files (x86)/TrinityCore/vmap4assembler.exe
+C:/Program Files (x86)/TrinityCore/vmap4extractor.exe
