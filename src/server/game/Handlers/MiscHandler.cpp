@@ -1728,8 +1728,11 @@ void WorldSession::HandleLockoutExtend(WorldPacket& recv_data)
     else
         sLog->outString("removing extension %i",extending);
 
-    InstancePlayerBind* bind = _player->GetBoundInstance(mapID, Difficulty(difficulty));
-    InstanceSave* save = bind->save;
-    save->HitExtendButton();
+    if (Player* player = GetPlayer())
+    {
+        sLog->outDebug(LOG_FILTER_MAPS, "HandleSetSavedInstanceExtend: player = %u, map_id = %u, difficulty = %u, extend = %u", player->GetGUID(), mapID, difficulty, extending);
 
+        if (InstancePlayerBind* bind = player->GetBoundInstance(mapID, Difficulty(difficulty)))
+            player->BindToInstance(bind->save, bind->perm, extending, bind->expired, false);
+    }
 }

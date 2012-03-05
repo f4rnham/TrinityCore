@@ -830,11 +830,12 @@ enum PlayerDelayedOperations
 struct InstancePlayerBind
 {
     InstanceSave* save;
-    bool perm;
+    bool perm, extended, expired;
     /* permanent PlayerInstanceBinds are created in Raid/Heroic instances for players
        that aren't already permanently bound when they are inside when a boss is killed
        or when they enter an instance that the group leader is permanently bound to. */
-    InstancePlayerBind() : save(NULL), perm(false) {}
+    InstancePlayerBind() : save(NULL), perm(false), extended(false), expired(false) {}
+    bool CanBeUsed() { return !expired || (expired && extended); };
 };
 
 enum DungeonStatusFlag
@@ -2377,7 +2378,7 @@ class Player : public Unit, public GridObject<Player>
         InstanceSave* GetInstanceSave(uint32 mapid, bool raid);
         void UnbindInstance(uint32 mapid, Difficulty difficulty, bool unload = false);
         void UnbindInstance(BoundInstancesMap::iterator &itr, Difficulty difficulty, bool unload = false);
-        InstancePlayerBind* BindToInstance(InstanceSave* save, bool permanent, bool load = false);
+        InstancePlayerBind* BindToInstance(InstanceSave* save, bool permanent, bool extended = false, bool expired = false, bool load = false);
         void BindToInstance();
         void SetPendingBind(uint32 instanceId, uint32 bindTimer) { _pendingBindId = instanceId; _pendingBindTimer = bindTimer; }
         bool HasPendingBind() const { return _pendingBindId > 0; }

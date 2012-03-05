@@ -96,10 +96,6 @@ class InstanceSave
            but that would depend on a lot of things that can easily change in future */
         Difficulty GetDifficulty() const { return m_difficulty; }
 
-        /*extending lockout, testing phase*/
-        bool IsExtended() const { return m_extended; };
-        void HitExtendButton() { m_extended = !m_extended; };
-
         typedef std::list<Player*> PlayerListType;
         typedef std::list<Group*> GroupListType;
     private:
@@ -114,7 +110,6 @@ class InstanceSave
         uint32 m_mapid;
         Difficulty m_difficulty;
         bool m_canReset;
-        bool m_extended;
 
         ACE_Thread_Mutex _lock;
 };
@@ -190,6 +185,7 @@ class InstanceSaveManager
         void _ResetOrWarnAll(uint32 mapid, Difficulty difficulty, bool warn, time_t resetTime);
         void _ResetInstance(uint32 mapid, uint32 instanceId);
         void _ResetSave(InstanceSaveHashMap::iterator &itr);
+        void _ResetOrExpireSave(InstanceSaveHashMap::iterator &itr, std::list<Player*> &needUpdate);
         // used during global instance resets
         bool lock_instLists;
         // fast lookup by instance id
