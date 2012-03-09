@@ -1293,8 +1293,8 @@ public:
 
         if (!*args)
         {
-            //! Display case         LANG_MOVEFLAGS_GET
-            handler->PSendSysMessage(1143 , target->GetUnitMovementFlags(), target->GetExtraUnitMovementFlags());
+            //! Display case
+            handler->PSendSysMessage(LANG_MOVEFLAGS_GET , target->GetUnitMovementFlags(), target->GetExtraUnitMovementFlags());
         }
         else
         {
@@ -1314,8 +1314,7 @@ public:
             }
 
             target->SendMovementFlagUpdate();
-            handler->PSendSysMessage(1144 , target->GetUnitMovementFlags(), target->GetExtraUnitMovementFlags());
-            //                      LANG_MOVEFLAGS_SET
+            handler->PSendSysMessage(LANG_MOVEFLAGS_SET , target->GetUnitMovementFlags(), target->GetExtraUnitMovementFlags());
         }
 
         return true;
