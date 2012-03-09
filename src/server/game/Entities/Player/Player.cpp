@@ -18157,7 +18157,7 @@ void Player::UnbindInstance(BoundInstancesMap::iterator &itr, Difficulty difficu
 
         itr->second.save->RemovePlayer(this);               // save can become invalid
         if (itr->second.perm)
-            GetSession()->SendCalendarRaidLockout(itr->second, false);
+            GetSession()->SendCalendarRaidLockout(&itr->second, false);
 
         m_boundInstances[difficulty].erase(itr++);
     }
