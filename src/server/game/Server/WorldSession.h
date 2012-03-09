@@ -294,7 +294,7 @@ class WorldSession
 
         void SendAttackStop(Unit const* enemy);
 
-        void SendBattlegGroundList(uint64 guid, BattlegroundTypeId bgTypeId);
+        void SendBattleGroundList(uint64 guid, BattlegroundTypeId bgTypeId);
 
         void SendTradeStatus(TradeStatus status);
         void SendUpdateTrade(bool trader_data = true);
@@ -893,7 +893,7 @@ class WorldSession
         void SendCalendarEventStatus(CalendarEvent const& calendarEvent, CalendarInvite const& invite);
         void SendCalendarEventModeratorStatusAlert(CalendarInvite const& invite);
         void SendCalendarClearPendingAction();
-        void SendCalendarRaidLockout(InstanceSave const* save, bool add);
+        void SendCalendarRaidLockout(struct InstancePlayerBind* bind, bool add);
         void SendCalendarRaidLockoutUpdated(InstanceSave const* save);
         void SendCalendarCommandResult(CalendarError err, char const* param = NULL);
 

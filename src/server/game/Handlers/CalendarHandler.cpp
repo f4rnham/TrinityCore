@@ -207,7 +207,7 @@ void WorldSession::HandleCalendarGuildFilter(WorldPacket& recvData)
 void WorldSession::HandleCalendarArenaTeam(WorldPacket& recvData)
 {
     sLog->outDebug(LOG_FILTER_NETWORKIO, "CMSG_CALENDAR_ARENA_TEAM [" UI64FMTD "]", _player->GetGUID());
-    
+
     int32 unk1;
     recvData >> unk1;
 
@@ -881,8 +881,12 @@ void WorldSession::SendCalendarCommandResult(CalendarError err, char const* para
     SendPacket(&data);
 }
 
-void WorldSession::SendCalendarRaidLockout(InstanceSave const* save, bool add)
+void WorldSession::SendCalendarRaidLockout(InstancePlayerBind* bind, bool add)
 {
+    // Don't add event for expired instance
+    if (bind->expired && add)
+        return;
+    InstanceSave* save = bind->save;
     sLog->outDebug(LOG_FILTER_NETWORKIO, "%s", add ? "SMSG_CALENDAR_RAID_LOCKOUT_ADDED" : "SMSG_CALENDAR_RAID_LOCKOUT_REMOVED");
     time_t currTime = time(NULL);
 
