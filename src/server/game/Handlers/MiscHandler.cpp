@@ -48,6 +48,7 @@
 #include "ScriptMgr.h"
 #include "MapManager.h"
 #include "InstanceScript.h"
+#include "InstanceSaveMgr.h"
 #include "GameObjectAI.h"
 #include "Group.h"
 #include "AccountMgr.h"
@@ -1708,4 +1709,30 @@ void WorldSession::HandleInstanceLockResponse(WorldPacket& recvPacket)
         _player->RepopAtGraveyard();
 
     _player->SetPendingBind(0, 0);
+}
+
+void WorldSession::HandleLockoutExtend(WorldPacket& recv_data)
+{
+    uint16 mapID;
+    uint8 difficulty, extending, a, b, c, d, e;
+    recv_data >> mapID >> a >> b >> difficulty >> c >> d >> e >> extending;
+    //       mapID mapID  00   00   difficulty    00   00   00      0X
+    // X == 1 extending
+    // X == 0 remove extension
+    sLog->outString("mapID %i",mapID);
+    sLog->outString("uint8 %i %i",a,b);
+    sLog->outString("difficulty %i",difficulty);
+    sLog->outString("uint8 %i %i %i",c,d,e);
+    if (extending)
+        sLog->outString("extending %i",extending);
+    else
+        sLog->outString("removing extension %i",extending);
+
+    if (Player* player = GetPlayer())
+    {
+        sLog->outDebug(LOG_FILTER_MAPS, "HandleSetSavedInstanceExtend: player = %u, map_id = %u, difficulty = %u, extend = %u", player->GetGUID(), mapID, difficulty, extending);
+
+        if (InstancePlayerBind* bind = player->GetBoundInstance(mapID, Difficulty(difficulty)))
+            player->BindToInstance(bind->save, bind->perm, extending, bind->expired, false);
+    }
 }

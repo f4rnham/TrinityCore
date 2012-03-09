@@ -1519,12 +1519,19 @@ void Unit::CalcAbsorbResist(Unit* victim, SpellSchoolMask schoolMask, DamageEffe
     if ((schoolMask & SPELL_SCHOOL_MASK_NORMAL) == 0)
     {
         float victimResistance = float(victim->GetResistance(schoolMask));
-        victimResistance += float(GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_TARGET_RESISTANCE, schoolMask));
+
+        // use masters SPELL_AURA_MOD_TARGET_RESISTANCE and GetSpellPenetrationItemMod() in case of pet
+        Unit* source = this;
+        if (ToPet() && GetOwner() && GetOwner()->ToPlayer())
+            source = GetOwner()->ToPlayer();
+        victimResistance += float(source->GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_TARGET_RESISTANCE, schoolMask));
 
         if (Player* player = ToPlayer())
             victimResistance -= float(player->GetSpellPenetrationItemMod());
+        else if (source != this)
+            victimResistance -= float(GetOwner()->ToPlayer()->GetSpellPenetrationItemMod());
 
-        // Resistance can't be lower then 0.
+        // Resistance can't be lower than 0.
         if (victimResistance < 0.0f)
             victimResistance = 0.0f;
 
@@ -13892,7 +13899,17 @@ void CharmInfo::InitCharmCreateSpells()
                 newstate = ACT_PASSIVE;
             else
             {
-                if (spellInfo->NeedsExplicitUnitTarget())
+                bool autocast = spellInfo->NeedsExplicitUnitTarget();
+
+                //try to load saved state, overwrite default
+                if (m_unit->GetOwner() && m_unit->GetOwner()->ToPlayer())
+                {
+                   savedAutospellsMap::iterator itr = m_unit->GetOwner()->ToPlayer()->m_savedAutospells.find(spellId);
+                    if (itr != m_unit->GetOwner()->ToPlayer()->m_savedAutospells.end())
+                        autocast = itr->second;
+                }
+
+                if (autocast)
                 {
                     newstate = ACT_ENABLED;
                     ToggleCreatureAutocast(spellInfo, true);
@@ -13959,6 +13976,23 @@ void CharmInfo::ToggleCreatureAutocast(SpellInfo const* spellInfo, bool apply)
 {
     if (spellInfo->IsPassive())
         return;
+
+    //save or update saved state
+    if (m_unit->GetOwner() && m_unit->GetOwner()->ToPlayer())
+    {
+        Player* player = m_unit->GetOwner()->ToPlayer();
+        savedAutospellsMap::iterator itr = player->m_savedAutospells.find(spellInfo->Id);
+        if (itr != player->m_savedAutospells.end())
+        {
+            itr->second = apply;
+            CharacterDatabase.PExecute("UPDATE pet_charm_spell SET autocast = '%u' WHERE guid = '%u' AND spell = '%u'", apply, player->GetGUIDLow(), spellInfo->Id);
+        }
+        else
+        {
+            player->m_savedAutospells.insert(std::make_pair(spellInfo->Id, apply));
+            CharacterDatabase.PExecute("INSERT INTO pet_charm_spell VALUES ('%u', '%u', '%u')", player->GetGUIDLow(), spellInfo->Id, apply);
+        }
+    }
 
     for (uint32 x = 0; x < MAX_SPELL_CHARM; ++x)
         if (spellInfo->Id == m_charmspells[x].GetAction())

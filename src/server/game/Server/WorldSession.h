@@ -785,6 +785,7 @@ class WorldSession
         void HandleResetInstancesOpcode(WorldPacket& recv_data);
         void HandleHearthAndResurrect(WorldPacket& recv_data);
         void HandleInstanceLockResponse(WorldPacket& recvPacket);
+        void HandleLockoutExtend(WorldPacket & recv_data);
 
         // Looking for Dungeon/Raid
         void HandleLfgSetCommentOpcode(WorldPacket& recv_data);
@@ -892,7 +893,7 @@ class WorldSession
         void SendCalendarEventStatus(CalendarEvent const& calendarEvent, CalendarInvite const& invite);
         void SendCalendarEventModeratorStatusAlert(CalendarInvite const& invite);
         void SendCalendarClearPendingAction();
-        void SendCalendarRaidLockout(InstanceSave const* save, bool add);
+        void SendCalendarRaidLockout(struct InstancePlayerBind* bind, bool add);
         void SendCalendarRaidLockoutUpdated(InstanceSave const* save);
         void SendCalendarCommandResult(CalendarError err, char const* param = NULL);
 

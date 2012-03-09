@@ -2444,6 +2444,8 @@ void Player::RegenerateAll()
         for (uint8 i = 0; i < MAX_RUNES; ++i)
             if (uint32 cd = GetRuneCooldown(i))
                 SetRuneCooldown(i, (cd > m_regenTimer) ? cd - m_regenTimer : 0);
+            else
+                Set2SRpassedTime(i, m_regenTimer);
 
     if (m_regenTimerCount >= 2000)
     {
@@ -17214,6 +17216,18 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
 
     _LoadEquipmentSets(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOADEQUIPMENTSETS));
 
+    // temporary pet autocast state, move to own function?
+    QueryResult res = CharacterDatabase.PQuery("SELECT spell, autocast FROM pet_charm_spell WHERE guid = '%u'", GetGUIDLow());
+    if (res)
+    {
+        do
+        {
+            Field* fields = res->Fetch();
+            m_savedAutospells.insert(std::make_pair(fields[0].GetUInt32(), fields[1].GetBool()));
+        }
+        while (res->NextRow());
+    }
+
     return true;
 }
 
@@ -18028,7 +18042,7 @@ void Player::_LoadBoundInstances(PreparedQueryResult result)
 
     Group* group = GetGroup();
 
-    //QueryResult* result = CharacterDatabase.PQuery("SELECT id, permanent, map, difficulty, resettime FROM character_instance LEFT JOIN instance ON instance = id WHERE guid = '%u'", GUID_LOPART(m_guid));
+    //QueryResult* result = CharacterDatabase.PQuery("SELECT id, permanent, extended, expired, map, difficulty, resettime FROM character_instance LEFT JOIN instance ON instance = id WHERE guid = '%u'", GUID_LOPART(m_guid));
     if (result)
     {
         do
@@ -18036,11 +18050,13 @@ void Player::_LoadBoundInstances(PreparedQueryResult result)
             Field* fields = result->Fetch();
 
             bool perm = fields[1].GetBool();
-            uint32 mapId = fields[2].GetUInt16();
+            bool extended = fields[2].GetBool();
+            bool expired = fields[3].GetBool();
+            uint32 mapId = fields[4].GetUInt16();
             uint32 instanceId = fields[0].GetUInt32();
-            uint8 difficulty = fields[3].GetUInt8();
+            uint8 difficulty = fields[5].GetUInt8();
 
-            time_t resetTime = time_t(fields[4].GetUInt32());
+            time_t resetTime = time_t(fields[6].GetUInt32());
             // the resettime for normal instances is only saved when the InstanceSave is unloaded
             // so the value read from the DB may be wrong here but only if the InstanceSave is loaded
             // and in that case it is not used
@@ -18087,7 +18103,7 @@ void Player::_LoadBoundInstances(PreparedQueryResult result)
 
             // since non permanent binds are always solo bind, they can always be reset
             if (InstanceSave* save = sInstanceSaveMgr->AddInstanceSave(mapId, instanceId, Difficulty(difficulty), resetTime, !perm, true))
-               BindToInstance(save, perm, true);
+               BindToInstance(save, perm, extended, expired, true);
         }
         while (result->NextRow());
     }
@@ -18141,29 +18157,31 @@ void Player::UnbindInstance(BoundInstancesMap::iterator &itr, Difficulty difficu
 
         itr->second.save->RemovePlayer(this);               // save can become invalid
         if (itr->second.perm)
-            GetSession()->SendCalendarRaidLockout(itr->second.save, false);
+            GetSession()->SendCalendarRaidLockout(itr->second, false);
 
         m_boundInstances[difficulty].erase(itr++);
     }
 }
 
-InstancePlayerBind* Player::BindToInstance(InstanceSave* save, bool permanent, bool load)
+InstancePlayerBind* Player::BindToInstance(InstanceSave* save, bool permanent, bool extended, bool expired, bool load)
 {
     if (save)
     {
         InstancePlayerBind& bind = m_boundInstances[save->GetDifficulty()][save->GetMapId()];
         if (bind.save)
         {
-            // update the save when the group kills a boss
-            if (permanent != bind.perm || save != bind.save)
+            // update the save when the group kills a boss or save gets extended
+            if (permanent != bind.perm || save != bind.save || extended != bind.extended)
                 if (!load)
                 {
                     PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_CHAR_INSTANCE);
 
                     stmt->setUInt32(0, save->GetInstanceId());
                     stmt->setBool(1, permanent);
-                    stmt->setUInt32(2, GetGUIDLow());
-                    stmt->setUInt32(3, bind.save->GetInstanceId());
+                    stmt->setBool(2, extended);
+                    stmt->setBool(3, expired);
+                    stmt->setUInt32(4, GetGUIDLow());
+                    stmt->setUInt32(5, bind.save->GetInstanceId());
 
                     CharacterDatabase.Execute(stmt);
                 }
@@ -18176,6 +18194,8 @@ InstancePlayerBind* Player::BindToInstance(InstanceSave* save, bool permanent, b
                 stmt->setUInt32(0, GetGUIDLow());
                 stmt->setUInt32(1, save->GetInstanceId());
                 stmt->setBool(2, permanent);
+                stmt->setBool(3, extended);
+                stmt->setBool(4, expired);
 
                 CharacterDatabase.Execute(stmt);
             }
@@ -18192,8 +18212,11 @@ InstancePlayerBind* Player::BindToInstance(InstanceSave* save, bool permanent, b
 
         bind.save = save;
         bind.perm = permanent;
+        bind.extended = extended;
+        bind.expired = expired;
         if (!load)
             sLog->outDebug(LOG_FILTER_MAPS, "Player::BindToInstance: %s(%d) is now bound to map %d, instance %d, difficulty %d", GetName(), GetGUIDLow(), save->GetMapId(), save->GetInstanceId(), save->GetDifficulty());
+        // add extended and expired to scripts if needed
         sScriptMgr->OnPlayerBindToInstance(this, save->GetDifficulty(), save->GetMapId(), permanent);
         return &bind;
     }
@@ -18207,12 +18230,14 @@ void Player::BindToInstance()
     if (!mapSave) //it seems sometimes mapSave is NULL, but I did not check why
         return;
 
+    InstancePlayerBind* bind = GetBoundInstance( mapSave->GetMapId(), mapSave->GetDifficulty());
+
     WorldPacket data(SMSG_INSTANCE_SAVE_CREATED, 4);
     data << uint32(0);
     GetSession()->SendPacket(&data);
     BindToInstance(mapSave, true);
 
-    GetSession()->SendCalendarRaidLockout(mapSave, true);
+    GetSession()->SendCalendarRaidLockout(bind, true);
 }
 
 void Player::SendRaidInfo()
@@ -18233,11 +18258,12 @@ void Player::SendRaidInfo()
             if (itr->second.perm)
             {
                 InstanceSave* save = itr->second.save;
+
                 data << uint32(save->GetMapId());           // map id
                 data << uint32(save->GetDifficulty());      // difficulty
                 data << uint64(save->GetInstanceId());      // instance id
-                data << uint8(1);                           // expired = 0
-                data << uint8(0);                           // extended = 1
+                data << uint8(!itr->second.expired);        // expired = 0
+                data << uint8(itr->second.extended);        // extended = 1
                 data << uint32(save->GetResetTime() - now); // reset time
                 ++counter;
             }
@@ -18299,6 +18325,11 @@ void Player::ConvertInstancesToGroup(Player* player, Group* group, bool switchLe
     {
         for (BoundInstancesMap::iterator itr = player->m_boundInstances[i].begin(); itr != player->m_boundInstances[i].end();)
         {
+            if (!itr->second.CanBeUsed())
+            {
+                itr++;
+                continue;
+            }
             group->BindToInstance(itr->second.save, itr->second.perm, false);
             // permanent binds are not removed
             if (switchLeader && !itr->second.perm)
@@ -23408,12 +23439,15 @@ uint32 Player::GetRuneBaseCooldown(uint8 index)
     uint8 rune = GetBaseRune(index);
     uint32 cooldown = RUNE_BASE_COOLDOWN;
 
+    // apply 2 second rule
+    cooldown -= m_runes->runes[index].passed2SR;
+    m_runes->runes[index].passed2SR = 0;
+
+    // apply cooldown reductions, e.g. from Unholy Presence
     AuraEffectList const& regenAura = GetAuraEffectsByType(SPELL_AURA_MOD_POWER_REGEN_PERCENT);
-    for (AuraEffectList::const_iterator i = regenAura.begin();i != regenAura.end(); ++i)
-    {
+    for (AuraEffectList::const_iterator i = regenAura.begin(); i != regenAura.end(); ++i)
         if ((*i)->GetMiscValue() == POWER_RUNE && (*i)->GetMiscValueB() == rune)
-            cooldown = cooldown*(100-(*i)->GetAmount())/100;
-    }
+            cooldown *= (100 - (*i)->GetAmount()) / 100;
 
     return cooldown;
 }

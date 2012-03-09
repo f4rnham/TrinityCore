@@ -2381,6 +2381,11 @@ bool InstanceMap::AddPlayerToMap(Player* player)
 
             // check for existing instance binds
             InstancePlayerBind* playerBind = player->GetBoundInstance(GetId(), Difficulty(GetSpawnMode()));
+
+            // expired and not extended player binds are ignored
+            if (playerBind && !playerBind->CanBeUsed())
+                playerBind = NULL;
+
             if (playerBind && playerBind->perm)
             {
                 // cannot enter other instances if bound permanently
@@ -2588,14 +2593,14 @@ void InstanceMap::PermBindAllPlayers(Player* source)
         // players inside an instance cannot be bound to other instances
         // some players may already be permanently bound, in this case nothing happens
         InstancePlayerBind* bind = player->GetBoundInstance(save->GetMapId(), save->GetDifficulty());
-        if (!bind || !bind->perm)
+        if (!bind || !bind->CanBeUsed())
         {
             player->BindToInstance(save, true);
             WorldPacket data(SMSG_INSTANCE_SAVE_CREATED, 4);
             data << uint32(0);
             player->GetSession()->SendPacket(&data);
 
-            player->GetSession()->SendCalendarRaidLockout(save, true);
+            player->GetSession()->SendCalendarRaidLockout(bind, true);
         }
 
         // if the leader is not in the instance the group will not get a perm bind

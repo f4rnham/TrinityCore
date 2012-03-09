@@ -1702,8 +1702,8 @@ AuraStateType SpellInfo::GetAuraState() const
     if (SpellFamilyName == SPELLFAMILY_DRUID && SpellFamilyFlags[0] & 0x400)
         return AURA_STATE_FAERIE_FIRE;
 
-    // Sting (hunter's pet ability)
-    if (Category == 1133)
+    // Sting (hunter's pet ability) + Glowing Blood (npc ability)
+    if (Category == 1133 || Id == 35325)
         return AURA_STATE_FAERIE_FIRE;
 
     // Victorious

@@ -1992,6 +1992,46 @@ class spell_item_refocus : public SpellScriptLoader
         }
 };
 
+enum not_lvl80
+{
+    DRUMS_OF_WAR             = 35475,
+    DRUMS_OF_BATTLE          = 35476,
+    DRUMS_OF_THE_RESTORATION = 35478
+};
+
+class spell_item_not_lvl80 : public SpellScriptLoader
+{
+public:
+    spell_item_not_lvl80() : SpellScriptLoader("spell_item_not_lvl80") { }
+
+    class spell_item_not_lvl80_AuraScript : public AuraScript
+    {
+        PrepareAuraScript(spell_item_not_lvl80_AuraScript);
+
+        bool Validate(SpellInfo const* /*spellEntry*/)
+        {
+            if (!sSpellMgr->GetSpellInfo(DRUMS_OF_WAR) || !sSpellMgr->GetSpellInfo(DRUMS_OF_BATTLE) || !sSpellMgr->GetSpellInfo(DRUMS_OF_THE_RESTORATION))
+                return false;
+            return true;
+        }
+
+        bool CheckAreaTarget(Unit* target)
+        {
+            return target->getLevel() < 80;
+        }
+
+        void Register()
+        {
+            DoCheckAreaTarget += AuraCheckAreaTargetFn(spell_item_not_lvl80_AuraScript::CheckAreaTarget);
+        }
+    };
+
+    AuraScript* GetAuraScript() const
+    {
+        return new spell_item_not_lvl80_AuraScript();
+    }
+};
+
 class spell_item_muisek_vessel : public SpellScriptLoader
 {
     public:
@@ -2071,5 +2111,6 @@ void AddSC_item_spell_scripts()
     new spell_item_unusual_compass();
     new spell_item_uded();
     new spell_item_chicken_cover();
+    new spell_item_not_lvl80();
     new spell_item_muisek_vessel();
 }

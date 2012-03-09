@@ -238,16 +238,30 @@ void InstanceSaveManager::LoadInstances()
 {
     uint32 oldMSTime = getMSTime();
 
-    // Delete expired instances (Instance related spawns are removed in the following cleanup queries)
-    CharacterDatabase.DirectExecute("DELETE i FROM instance i LEFT JOIN instance_reset ir ON mapid = map AND i.difficulty = ir.difficulty "
-                                    "WHERE (i.resettime > 0 AND i.resettime < UNIX_TIMESTAMP()) OR (ir.resettime IS NOT NULL AND ir.resettime < UNIX_TIMESTAMP())");
+    // Delete expired instances, not raids and heroics
+    CharacterDatabase.DirectExecute("DELETE FROM instance WHERE resettime != 0 AND resettime < UNIX_TIMESTAMP()");
+
+    // Raids and heroics
+    // Delete expired and non-extended instances from character_instance
+    CharacterDatabase.DirectExecute("DELETE ci.* FROM character_instance AS ci "
+                                    "LEFT JOIN instance AS i ON i.id = ci.instance "
+                                    "LEFT JOIN instance_reset AS ir ON (i.map = ir.mapid AND i.difficulty = ir.difficulty) "
+                                    "WHERE (ir.resettime < UNIX_TIMESTAMP() AND ci.expired = 1 AND ci.extended = 0)");
+    // Expire instances
+    CharacterDatabase.DirectExecute("UPDATE character_instance AS ci "
+                                    "LEFT JOIN instance AS i ON i.id = ci.instance "
+                                    "LEFT JOIN instance_reset AS ir ON (i.map = ir.mapid AND i.difficulty = ir.difficulty) "
+                                    "SET ci.expired = 1 WHERE ir.resettime < UNIX_TIMESTAMP()");
+
+    // Clean instances not found in character_instance, there should be no groups bound to instance when there is no player bound to it
+    CharacterDatabase.DirectExecute("DELETE i.* FROM instance AS i LEFT JOIN character_instance AS ci ON i.id = ci.instance WHERE ci.guid IS NULL");
+
+    // Delete group_instance references to not existing instance
+    CharacterDatabase.DirectExecute("DELETE FROM group_instance WHERE instance NOT IN (SELECT id FROM instance)");
 
     // Delete invalid character_instance and group_instance references
     CharacterDatabase.DirectExecute("DELETE ci.* FROM character_instance AS ci LEFT JOIN characters AS c ON ci.guid = c.guid WHERE c.guid IS NULL");
     CharacterDatabase.DirectExecute("DELETE gi.* FROM group_instance     AS gi LEFT JOIN groups     AS g ON gi.guid = g.guid WHERE g.guid IS NULL");
-
-    // Delete invalid instance references
-    CharacterDatabase.DirectExecute("DELETE i.* FROM instance AS i LEFT JOIN character_instance AS ci ON i.id = ci.instance LEFT JOIN group_instance AS gi ON i.id = gi.instance WHERE ci.guid IS NULL AND gi.guid IS NULL");
 
     // Delete invalid references to instance
     CharacterDatabase.DirectExecute(CharacterDatabase.GetPreparedStatement(CHAR_DEL_NONEXISTENT_INSTANCE_CREATURE_RESPAWNS));
@@ -515,6 +529,52 @@ void InstanceSaveManager::_ResetSave(InstanceSaveHashMap::iterator &itr)
     lock_instLists = false;
 }
 
+void InstanceSaveManager::_ResetOrExpireSave(InstanceSaveHashMap::iterator &itr, std::list<Player*> &needUpdate)
+{
+    lock_instLists = true;
+
+    InstanceSave::PlayerListType &pList = itr->second->m_playerList, deleteList;
+    for(InstanceSave::PlayerListType::iterator it = pList.begin(); it != pList.end(); ++it)
+    {
+        Player* player = *it;
+        InstancePlayerBind* bind = player->GetBoundInstance(itr->second->GetMapId(), itr->second->GetDifficulty());
+        if (!bind->CanBeUsed())
+            deleteList.push_back(*it);
+        else
+        {
+            player->BindToInstance(bind->save, bind->perm, bind->extended, true, false);
+            needUpdate.push_back(player);
+        }
+    }
+
+    bool deleteSave = (deleteList.size() == pList.size());
+
+    while (!deleteList.empty())
+    {
+        Player* player = deleteList.front();
+        player->UnbindInstance(itr->second->GetMapId(), itr->second->GetDifficulty(), true);
+        deleteList.pop_front();
+    }
+
+    // delete all?
+    InstanceSave::GroupListType &gList = itr->second->m_groupList;
+    while (!gList.empty())
+    {
+        Group* group = *(gList.begin());
+        group->UnbindInstance(itr->second->GetMapId(), itr->second->GetDifficulty(), true);
+    }
+
+    if (deleteSave)
+    {
+        delete itr->second;
+        m_instanceSaveById.erase(itr++);
+    }
+    else
+        ++itr;
+
+    lock_instLists = false;
+}
+
 void InstanceSaveManager::_ResetInstance(uint32 mapid, uint32 instanceId)
 {
     sLog->outDebug(LOG_FILTER_MAPS, "InstanceSaveMgr::_ResetInstance %u, %u", mapid, instanceId);
@@ -551,27 +611,40 @@ void InstanceSaveManager::_ResetOrWarnAll(uint32 mapid, Difficulty difficulty, b
     if (!warn)
     {
         MapDifficulty const* mapDiff = GetMapDifficultyData(mapid, difficulty);
+
+        std::list< Player*> needUpdate;
+
         if (!mapDiff || !mapDiff->resetTime)
         {
             sLog->outError("InstanceSaveManager::ResetOrWarnAll: not valid difficulty or no reset delay for map %d", mapid);
             return;
         }
 
-        // remove all binds to instances of the given map
+        // remove or expire all binds to instances of the given map
         for (InstanceSaveHashMap::iterator itr = m_instanceSaveById.begin(); itr != m_instanceSaveById.end();)
         {
             if (itr->second->GetMapId() == mapid && itr->second->GetDifficulty() == difficulty)
-                _ResetSave(itr);
+                _ResetOrExpireSave(itr, needUpdate);
             else
                 ++itr;
         }
 
-        // delete them from the DB, even if not loaded
-        SQLTransaction trans = CharacterDatabase.BeginTransaction();
-        trans->PAppend("DELETE FROM character_instance USING character_instance LEFT JOIN instance ON character_instance.instance = id WHERE map = '%u' and difficulty='%u'", mapid, difficulty);
-        trans->PAppend("DELETE FROM group_instance USING group_instance LEFT JOIN instance ON group_instance.instance = id WHERE map = '%u' and difficulty='%u'", mapid, difficulty);
-        trans->PAppend("DELETE FROM instance WHERE map = '%u' and difficulty='%u'", mapid, difficulty);
-        CharacterDatabase.CommitTransaction(trans);
+        // Delete expired and non-extended instances from character_instance for offline players, online are handled in _ResetOrExpireSave
+        CharacterDatabase.DirectPExecute("DELETE ci.* FROM character_instance AS ci "
+                                         "LEFT JOIN instance AS i ON i.id = ci.instance "
+                                         "WHERE i.map = %u AND i.difficulty = %u AND ci.extended = 0 AND ci.expired = 1", mapid, difficulty);
+        // Expire instances
+        CharacterDatabase.DirectPExecute("UPDATE character_instance AS ci "
+                                         "LEFT JOIN instance AS i ON i.id = ci.instance "
+                                         "SET ci.expired = 1 WHERE i.map = %u AND i.difficulty = %u", mapid, difficulty);
+
+        // Delete unused instances
+        CharacterDatabase.DirectExecute("DELETE i.* FROM instance AS i LEFT JOIN character_instance AS ci ON i.id = ci.instance WHERE ci.guid IS NULL");
+
+        // Delete all groups?
+        CharacterDatabase.DirectPExecute("DELETE gi.* FROM group_instance AS gi "
+                                         "LEFT JOIN instance AS i ON gi.instance = i.id "
+                                         "WHERE map = %u and difficulty = %u", mapid, difficulty);
 
         // calculate the next reset time
         uint32 diff = sWorld->getIntConfig(CONFIG_INSTANCE_RESET_TIME_HOUR) * HOUR;
@@ -593,6 +666,12 @@ void InstanceSaveManager::_ResetOrWarnAll(uint32 mapid, Difficulty difficulty, b
         stmt->setUInt8(2, uint8(difficulty));
 
         CharacterDatabase.Execute(stmt);
+
+        while (!needUpdate.empty())
+        {
+            needUpdate.front()->SendRaidInfo();
+            needUpdate.pop_front();
+        }
     }
 
     // note: this isn't fast but it's meant to be executed very rarely

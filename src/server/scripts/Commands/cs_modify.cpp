@@ -97,6 +97,8 @@ public:
         if (handler->HasLowerSecurity(target, 0))
             return false;
 
+        hp = target->isAlive() ? hp : 0;
+
         handler->PSendSysMessage(LANG_YOU_CHANGE_HP, handler->GetNameLink(target).c_str(), hp, hpm);
         if (handler->needReportToTarget(target))
             (ChatHandler(target)).PSendSysMessage(LANG_YOURS_HP_CHANGED, handler->GetNameLink().c_str(), hp, hpm);

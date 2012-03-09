@@ -6396,6 +6396,15 @@ void AuraEffect::HandlePeriodicHealAurasTick(Unit* target, Unit* caster) const
         if (AuraEffect const* Tenacity = target->GetAuraEffect(58549, 0))
             AddPctN(TakenTotalMod, Tenacity->GetAmount());
 
+        //Demonic Aegis increases healing of Fel Armor
+        if (m_spellInfo->SpellIconID == 2297)
+            if (target->HasAura(30143))      //rank 1
+                AddPctF(TakenTotalMod, 10);
+            else if (target->HasAura(30144)) //rank 2
+                AddPctF(TakenTotalMod, 20);
+            else if (target->HasAura(30145)) //rank 3
+                AddPctF(TakenTotalMod, 30);
+
         // Healing taken percent
         float minval = (float)target->GetMaxNegativeAuraModifier(SPELL_AURA_MOD_HEALING_PCT);
         if (minval)

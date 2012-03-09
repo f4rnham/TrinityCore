@@ -1205,8 +1205,8 @@ void AchievementMgr::UpdateAchievementCriteria(AchievementCriteriaTypes type, ui
                 if (achievementCriteria->use_item.itemID != miscValue1)
                     continue;
 
-                // Children's Week achievements have extra requirements
-                if (achievement->categoryId == CATEGORY_CHILDRENS_WEEK)
+                // Children's Week achievements have extra requirements and Dinner Impossible too
+                if (achievement->categoryId == CATEGORY_CHILDRENS_WEEK || achievement->ID == 1785)
                 {
                     AchievementCriteriaDataSet const* data = sAchievementMgr->GetCriteriaDataSet(achievementCriteria);
                     if (!data || !data->Meets(GetPlayer(), NULL))

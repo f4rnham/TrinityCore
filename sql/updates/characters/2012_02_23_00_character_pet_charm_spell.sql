@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS `pet_charm_spell`;CREATE TABLE `pet_charm_spell` (  `guid` INT(10) UNSIGNED NOT NULL,  `spell` MEDIUMINT(8) UNSIGNED NOT NULL,  `autocast` TINYINT(1) DEFAULT NULL,  PRIMARY KEY (`guid`,`spell`)  );
