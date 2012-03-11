@@ -2486,6 +2486,10 @@ class Player : public Unit, public GridObject<Player>
         void AddWhisperWhiteList(uint64 guid) { WhisperList.push_back(guid); }
         bool IsInWhisperWhiteList(uint64 guid);
 
+        bool IsOnAutoPilot, lockedTarget;
+        Unit* m_autoTarget;
+        void autoAction();
+
         //! Return collision height sent to client
         float GetCollisionHeight(bool mounted)
         {

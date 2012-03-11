@@ -4758,3 +4758,14 @@ bool ChatHandler::HandleUnbindSightCommand(const char * /*args*/)
     m_session->GetPlayer()->StopCastingBindSight();
     return true;
 }
+
+bool ChatHandler::HandleAuto(const char * /*args*/)
+{
+    Player* player = m_session->GetPlayer();
+    player->IsOnAutoPilot = !player->IsOnAutoPilot;
+    if (player->IsOnAutoPilot)
+        player->Say("autopilot ON",0);
+    else
+        player->Say("autopilot OFF",0);
+    return true;
+}

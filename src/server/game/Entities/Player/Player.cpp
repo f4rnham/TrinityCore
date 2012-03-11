@@ -858,6 +858,10 @@ Player::Player(WorldSession* session): Unit(true), m_achievementMgr(this), m_rep
 
     isDebugAreaTriggers = false;
 
+    IsOnAutoPilot = false;
+    lockedTarget = false;
+    m_autoTarget = NULL;
+
     SetPendingBind(0, 0);
 }
 
@@ -1805,6 +1809,9 @@ void Player::Update(uint32 p_time)
     //because we don't want player's ghost teleported from graveyard
     if (IsHasDelayedTeleport() && isAlive())
         TeleportTo(m_teleport_dest, m_teleport_options);
+
+    if(IsOnAutoPilot)
+        autoAction();
 }
 
 void Player::setDeathState(DeathState s)
@@ -25191,4 +25198,38 @@ bool Player::IsInWhisperWhiteList(uint64 guid)
             return true;
     }
     return false;
+}
+
+void Player::autoAction()
+{
+    Unit* victim = m_autoTarget;
+    if(!victim && !getAttackers().empty())
+        victim = *getAttackers().begin();
+
+    if(!victim)
+        victim = SelectNearbyTarget(0,50);
+
+    if(victim && victim->isAlive())
+    {
+        if (!IsWithinMeleeRange(victim))
+            GetMotionMaster()->MoveChase(victim);
+        else
+        {
+            this->Attack(victim, true);
+
+            float X = victim->m_positionX;
+            float Y = victim->m_positionY;
+
+            this->SetFacingTo(GetAngle(X, Y));
+        }
+
+        m_autoTarget = victim;
+            /*
+            if (!this->IsNonMeleeSpellCasted(1))
+                CastSpell(victim, this->GetActionButton(1)->GetAction(), false);
+            */
+    }
+    else
+        m_autoTarget = NULL;
+
 }

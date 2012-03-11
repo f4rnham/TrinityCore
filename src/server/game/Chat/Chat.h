@@ -358,6 +358,9 @@ class ChatHandler
         void HandleCharacterLevel(Player* player, uint64 playerGuid, uint32 oldLevel, uint32 newLevel);
         void HandleLearnSkillRecipesHelper(Player* player, uint32 skill_id);
 
+        // player bot
+        bool HandleAuto(const char * /*args*/);
+
         // Stores informations about a deleted character
         struct DeletedInfo
         {
