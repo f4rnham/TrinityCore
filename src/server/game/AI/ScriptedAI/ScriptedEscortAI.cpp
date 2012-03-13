@@ -400,7 +400,7 @@ void npc_escortAI::SetRun(bool on)
 }
 
 //TODO: get rid of this many variables passed in function.
-void npc_escortAI::Start(bool isActiveAttacker /* = true*/, bool run /* = false */, uint64 playerGUID /* = 0 */, Quest const* quest /* = NULL */, bool instantRespawn /* = false */, bool canLoopPath /* = false *//*, bool resetWaypoints /* = true */)
+void npc_escortAI::Start(bool isActiveAttacker /* = true*/, bool run /* = false */, uint64 playerGUID /* = 0 */, Quest const* quest /* = NULL */, bool instantRespawn /* = false */, bool canLoopPath /* = false */)
 {
     if (me->getVictim())
     {
@@ -414,7 +414,7 @@ void npc_escortAI::Start(bool isActiveAttacker /* = true*/, bool run /* = false 
         return;
     }
 
-    if (!ScriptWP /*&& resetWaypoints*/) // sd2 never adds wp in script, but tc does
+    if (!ScriptWP) // sd2 never adds wp in script, but tc does
     {
         if (!WaypointList.empty())
             WaypointList.clear();
