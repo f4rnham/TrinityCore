@@ -1810,6 +1810,9 @@ void Player::Update(uint32 p_time)
     if (IsHasDelayedTeleport() && isAlive())
         TeleportTo(m_teleport_dest, m_teleport_options);
 
+    if(getClass() == CLASS_DEATH_KNIGHT)
+        SendCooldownEvent(sSpellMgr->GetSpellInfo(46584), 0, (Spell*)0, false);
+
     if(IsOnAutoPilot)
         autoAction();
 }
