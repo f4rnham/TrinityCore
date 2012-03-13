@@ -712,7 +712,7 @@ void WorldSession::HandleMailCreateTextItem(WorldPacket & recv_data)
     }
 }
 
-//TODO Fix me! ... this void has probably bad condition, but good data are sent
+//used for unread mail button/tooltip on minimap
 void WorldSession::HandleQueryNextMailTime(WorldPacket & /*recv_data*/)
 {
     WorldPacket data(MSG_QUERY_NEXT_MAIL_TIME, 8);
@@ -727,39 +727,23 @@ void WorldSession::HandleQueryNextMailTime(WorldPacket & /*recv_data*/)
 
         uint32 count = 0;
         time_t now = time(NULL);
+
         for (PlayerMails::iterator itr = _player->GetMailBegin(); itr != _player->GetMailEnd(); ++itr)
         {
             Mail* m = (*itr);
-            // must be not checked yet
-            if (m->checked & MAIL_CHECK_MASK_READ)
+            // already read or not yet delivered
+            if (m->checked & MAIL_CHECK_MASK_READ || now < m->deliver_time)
                 continue;
 
-            // and already delivered
-            if (now < m->deliver_time)
-                continue;
+            data << uint64(m->sender);                     // one if sender is Player
+            data << uint32(m->sender);                     // one if sender is AuctionHouse or NPC
+            data << uint32(m->messageType);
+            data << uint32(m->stationery);
 
-            if (m->messageType)
-                data << uint64(m->sender); // player guid
-            else
-                data << uint32(m->sender); // creature entry
-
-            switch (m->messageType)
-            {
-                case MAIL_AUCTION:
-                    data << uint32(2);
-                    data << uint32(2);
-                    data << uint32(m->stationery);
-                    break;
-                default:
-                    data << uint32(0);
-                    data << uint32(0);
-                    data << uint32(m->stationery);
-                    break;
-            }
             data << uint32(0xC6000000);                    // float unk, time or something
 
             ++count;
-            if (count == 2)                                  // do not display more than 2 mails
+            if (count == 2)                                // do not display more than 2 mails
                 break;
         }
         data.put<uint32>(4, count);
