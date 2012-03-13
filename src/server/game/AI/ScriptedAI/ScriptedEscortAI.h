@@ -74,7 +74,7 @@ struct npc_escortAI : public ScriptedAI
         virtual void WaypointReached(uint32 pointId) = 0;
         virtual void WaypointStart(uint32 /*pointId*/) {}
 
-        void Start(bool isActiveAttacker = true, bool run = false, uint64 playerGUID = 0, Quest const* quest = NULL, bool instantRespawn = false, bool canLoopPath = false, bool resetWaypoints = true);
+        void Start(bool isActiveAttacker = true, bool run = false, uint64 playerGUID = 0, Quest const* quest = NULL, bool instantRespawn = false, bool canLoopPath = false/*, bool resetWaypoints = true*/);
 
         void SetRun(bool on = true);
         void SetEscortPaused(bool on);
@@ -102,10 +102,13 @@ struct npc_escortAI : public ScriptedAI
         void AddEscortState(uint32 escortState) { m_uiEscortState |= escortState; }
         void RemoveEscortState(uint32 escortState) { m_uiEscortState &= ~escortState; }
 
+        void modFlags(bool atStart);
+
         uint64 m_uiPlayerGUID;
         uint32 m_uiWPWaitTimer;
         uint32 m_uiPlayerCheckTimer;
         uint32 m_uiEscortState;
+        uint32 m_hadFlags;
         float MaxPlayerDistance;
 
         Quest const* m_pQuestForEscort;                     //generally passed in Start() when regular escort script.
@@ -115,7 +118,6 @@ struct npc_escortAI : public ScriptedAI
 
         bool m_bIsActiveAttacker;                           //obsolete, determined by faction.
         bool m_bIsRunning;                                  //all creatures are walking by default (has flag MOVEMENTFLAG_WALK)
-        bool m_bCanInstantRespawn;                          //if creature should respawn instantly after escort over (if not, database respawntime are used)
         bool m_bCanReturnToStart;                           //if creature can walk same path (loop) without despawn. Not for regular escort quests.
         bool DespawnAtEnd;
         bool DespawnAtFar;

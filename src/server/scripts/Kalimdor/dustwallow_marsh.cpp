@@ -597,7 +597,7 @@ public:
                  creature->setFaction(FACTION_ESCORT_N_NEUTRAL_ACTIVE);
                  creature->SetStandState(UNIT_STAND_STATE_STAND);
                  DoScriptText(SAY_QUEST_ACCEPTED, creature);
-                 pEscortAI->Start(false, false, player->GetGUID());
+                 pEscortAI->Start(false, false, player->GetGUID(), quest);
              }
          }
          return true;

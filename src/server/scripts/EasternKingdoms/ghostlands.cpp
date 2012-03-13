@@ -202,7 +202,7 @@ public:
             creature->setFaction(113);
 
             if (npc_escortAI* pEscortAI = CAST_AI(npc_ranger_lilatha::npc_ranger_lilathaAI, creature->AI()))
-                pEscortAI->Start(true, false, player->GetGUID());
+                pEscortAI->Start(true, false, player->GetGUID(), quest);
         }
         return true;
     }

@@ -384,7 +384,7 @@ public:
         if (quest->GetQuestId() == QUEST_ROAD_TO_FALCON_WATCH)
         {
             if (npc_escortAI* pEscortAI = CAST_AI(npc_wounded_blood_elf::npc_wounded_blood_elfAI, creature->AI()))
-                pEscortAI->Start(true, false, player->GetGUID());
+                pEscortAI->Start(true, false, player->GetGUID(), quest);
 
             // Change faction so mobs attack
             creature->setFaction(775);

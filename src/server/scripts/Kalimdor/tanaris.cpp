@@ -414,7 +414,7 @@ public:
             DoScriptText(SAY_OOX_START, creature);
 
             if (npc_escortAI* pEscortAI = CAST_AI(npc_OOX17::npc_OOX17AI, creature->AI()))
-                pEscortAI->Start(true, false, player->GetGUID());
+                pEscortAI->Start(true, false, player->GetGUID(), quest);
         }
         return true;
     }

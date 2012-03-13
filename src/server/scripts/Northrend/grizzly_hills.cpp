@@ -214,7 +214,7 @@ public:
             }
 
             if (npc_escortAI* pEscortAI = CAST_AI(npc_emily::npc_emilyAI, (creature->AI())))
-                pEscortAI->Start(true, false, player->GetGUID());
+                pEscortAI->Start(true, false, player->GetGUID(), quest);
         }
         return true;
     }

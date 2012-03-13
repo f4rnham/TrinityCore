@@ -1031,7 +1031,7 @@ public:
             if (npc_maxx_a_million_escortAI* pEscortAI = CAST_AI(npc_maxx_a_million_escort::npc_maxx_a_million_escortAI, creature->AI()))
             {
                 creature->setFaction(113);
-                pEscortAI->Start(false, false, player->GetGUID());
+                pEscortAI->Start(false, false, player->GetGUID(), quest);
             }
         }
         return true;

@@ -61,7 +61,7 @@ public:
             DoScriptText(SAY_DS_START, creature);
 
             if (npc_escortAI* pEscortAI = CAST_AI(npc_daphne_stilwell::npc_daphne_stilwellAI, creature->AI()))
-                pEscortAI->Start(true, true, player->GetGUID());
+                pEscortAI->Start(true, true, player->GetGUID(), quest);
         }
 
         return true;
@@ -209,7 +209,7 @@ public:
         if (quest->GetQuestId() == QUEST_DEFIAS_BROTHERHOOD)
         {
             if (npc_escortAI* pEscortAI = CAST_AI(npc_defias_traitor::npc_defias_traitorAI, creature->AI()))
-                pEscortAI->Start(true, true, player->GetGUID());
+                pEscortAI->Start(true, true, player->GetGUID(), quest);
 
             DoScriptText(SAY_START, creature, player);
         }

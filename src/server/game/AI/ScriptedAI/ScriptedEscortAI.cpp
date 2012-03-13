@@ -24,11 +24,11 @@ npc_escortAI::npc_escortAI(Creature* creature) : ScriptedAI(creature),
     m_uiWPWaitTimer(2500),
     m_uiPlayerCheckTimer(1000),
     m_uiEscortState(STATE_ESCORT_NONE),
+    m_hadFlags(0),
     MaxPlayerDistance(DEFAULT_MAX_PLAYER_DISTANCE),
     m_pQuestForEscort(NULL),
     m_bIsActiveAttacker(true),
     m_bIsRunning(false),
-    m_bCanInstantRespawn(false),
     m_bCanReturnToStart(false),
     DespawnAtEnd(true),
     DespawnAtFar(true),
@@ -120,6 +120,8 @@ void npc_escortAI::MoveInLineOfSight(Unit* who)
 
 void npc_escortAI::JustDied(Unit* /*killer*/)
 {
+    modFlags(false);
+
     if (!HasEscortState(STATE_ESCORT_ESCORTING) || !m_uiPlayerGUID || !m_pQuestForEscort)
         return;
 
@@ -228,14 +230,7 @@ void npc_escortAI::UpdateAI(uint32 const diff)
                         return;
                     }
 
-                    if (m_bCanInstantRespawn)
-                    {
-                        me->setDeathState(JUST_DIED);
-                        me->Respawn();
-                    }
-                    else
-                        me->DespawnOrUnsummon();
-
+                    me->Kill(me, false);
                     return;
                 }
                 else
@@ -269,14 +264,7 @@ void npc_escortAI::UpdateAI(uint32 const diff)
             {
                 sLog->outDebug(LOG_FILTER_TSCR, "TSCR: EscortAI failed because player/group was to far away or not found");
 
-                if (m_bCanInstantRespawn)
-                {
-                    me->setDeathState(JUST_DIED);
-                    me->Respawn();
-                }
-                else
-                    me->DespawnOrUnsummon();
-
+                me->Kill(me, false);
                 return;
             }
 
@@ -412,7 +400,7 @@ void npc_escortAI::SetRun(bool on)
 }
 
 //TODO: get rid of this many variables passed in function.
-void npc_escortAI::Start(bool isActiveAttacker /* = true*/, bool run /* = false */, uint64 playerGUID /* = 0 */, Quest const* quest /* = NULL */, bool instantRespawn /* = false */, bool canLoopPath /* = false */, bool resetWaypoints /* = true */)
+void npc_escortAI::Start(bool isActiveAttacker /* = true*/, bool run /* = false */, uint64 playerGUID /* = 0 */, Quest const* quest /* = NULL */, bool instantRespawn /* = false */, bool canLoopPath /* = false *//*, bool resetWaypoints /* = true */)
 {
     if (me->getVictim())
     {
@@ -426,7 +414,7 @@ void npc_escortAI::Start(bool isActiveAttacker /* = true*/, bool run /* = false 
         return;
     }
 
-    if (!ScriptWP && resetWaypoints) // sd2 never adds wp in script, but tc does
+    if (!ScriptWP /*&& resetWaypoints*/) // sd2 never adds wp in script, but tc does
     {
         if (!WaypointList.empty())
             WaypointList.clear();
@@ -447,11 +435,13 @@ void npc_escortAI::Start(bool isActiveAttacker /* = true*/, bool run /* = false 
     m_uiPlayerGUID = playerGUID;
     m_pQuestForEscort = quest;
 
-    m_bCanInstantRespawn = instantRespawn;
     m_bCanReturnToStart = canLoopPath;
 
-    if (m_bCanReturnToStart && m_bCanInstantRespawn)
-        sLog->outDebug(LOG_FILTER_TSCR, "TSCR: EscortAI is set to return home after waypoint end and instant respawn at waypoint end. Creature will never despawn.");
+    if (instantRespawn)
+    {
+        me->SetCorpseDelay(1);
+        me->SetRespawnDelay(1);
+    }
 
     if (me->GetMotionMaster()->GetCurrentMovementGeneratorType() == WAYPOINT_MOTION_TYPE)
     {
@@ -462,6 +452,9 @@ void npc_escortAI::Start(bool isActiveAttacker /* = true*/, bool run /* = false 
 
     //disable npcflags
     me->SetUInt32Value(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_NONE);
+
+    //disable unit PC and NPC immune flags
+    modFlags(true);
 
     sLog->outDebug(LOG_FILTER_TSCR, "TSCR: EscortAI started with " UI64FMTD " waypoints. ActiveAttacker = %d, Run = %d, PlayerGUID = " UI64FMTD "", uint64(WaypointList.size()), m_bIsActiveAttacker, m_bIsRunning, m_uiPlayerGUID);
 
@@ -551,4 +544,22 @@ bool npc_escortAI::GetWaypointPosition(uint32 pointId, float& x, float& y, float
     }
 
     return false;
+}
+
+void npc_escortAI::modFlags(bool atStart)
+{
+    uint32 flags = me->GetUInt32Value(UNIT_FIELD_FLAGS);
+    if (atStart)
+    {
+        // store only these two flags
+        m_hadFlags = flags & (UNIT_FLAG_IMMUNE_TO_NPC & UNIT_FLAG_IMMUNE_TO_PC);
+        flags ^= UNIT_FLAG_IMMUNE_TO_NPC & UNIT_FLAG_IMMUNE_TO_PC;
+        me->SetUInt32Value(UNIT_FIELD_FLAGS, flags);
+    }
+    else
+    {
+        flags |= m_hadFlags;
+        me->SetUInt32Value(UNIT_FIELD_FLAGS, flags);
+    }
+
 }

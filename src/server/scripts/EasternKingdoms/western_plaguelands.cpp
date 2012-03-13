@@ -294,7 +294,7 @@ public:
         npc_escortAI* pEscortAI = CAST_AI(npc_anchorite_truuen::npc_anchorite_truuenAI, creature->AI());
 
         if (quest->GetQuestId() == QUEST_TOMB_LIGHTBRINGER)
-            pEscortAI->Start(true, true, player->GetGUID());
+            pEscortAI->Start(true, true, player->GetGUID(), quest);
         return false;
     }
 

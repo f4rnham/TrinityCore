@@ -441,7 +441,7 @@ public:
                 creature->GetMotionMaster()->MoveJumpTo(0, 0.4f, 0.4f);
                 creature->setFaction(113);
 
-                pEscortAI->Start(false, false, player->GetGUID());
+                pEscortAI->Start(false, false, player->GetGUID(), quest);
                 DoScriptText(SAY_WP_1, creature);
             }
         }

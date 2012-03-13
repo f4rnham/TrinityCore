@@ -112,7 +112,7 @@ public:
             DoScriptText(SAY_QUESTACCEPT, creature, player);
 
             if (npc_escortAI* pEscortAI = CAST_AI(npc_deathstalker_erland::npc_deathstalker_erlandAI, creature->AI()))
-                pEscortAI->Start(true, false, player->GetGUID());
+                pEscortAI->Start(true, false, player->GetGUID(), quest);
         }
 
         return true;

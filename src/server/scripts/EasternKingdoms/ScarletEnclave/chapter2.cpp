@@ -184,7 +184,7 @@ public:
             creature->SetStandState(UNIT_STAND_STATE_STAND);
 
             if (npc_escortAI* pEscortAI = CAST_AI(npc_koltira_deathweaver::npc_koltira_deathweaverAI, creature->AI()))
-                pEscortAI->Start(false, false, player->GetGUID());
+                pEscortAI->Start(false, false, player->GetGUID(), quest);
         }
         return true;
     }

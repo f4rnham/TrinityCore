@@ -212,7 +212,7 @@ public:
        {
             if (npc_escortAI* pEscortAI = CAST_AI(npc_dalinda::npc_dalindaAI, creature->AI()))
             {
-                pEscortAI->Start(true, false, player->GetGUID());
+                pEscortAI->Start(true, false, player->GetGUID(), quest);
                 creature->setFaction(113);
             }
         }

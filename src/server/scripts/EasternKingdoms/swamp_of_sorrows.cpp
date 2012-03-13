@@ -48,7 +48,7 @@ public:
     {
         if (quest->GetQuestId() == QUEST_GALENS_ESCAPE)
         {
-            CAST_AI(npc_galen_goodward::npc_galen_goodwardAI, creature->AI())->Start(false, false, player->GetGUID());
+            CAST_AI(npc_galen_goodward::npc_galen_goodwardAI, creature->AI())->Start(false, false, player->GetGUID(), quest);
             creature->setFaction(FACTION_ESCORT_N_NEUTRAL_ACTIVE);
             DoScriptText(SAY_QUEST_ACCEPTED, creature);
         }

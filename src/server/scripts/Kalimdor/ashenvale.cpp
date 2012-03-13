@@ -160,7 +160,7 @@ class npc_torek : public CreatureScript
                 creature->setFaction(113);
 
                 if (npc_escortAI* pEscortAI = CAST_AI(npc_torekAI, creature->AI()))
-                    pEscortAI->Start(true, true, player->GetGUID());
+                    pEscortAI->Start(true, true, player->GetGUID(), quest);
             }
 
             return true;
@@ -253,7 +253,7 @@ class npc_ruul_snowhoof : public CreatureScript
                 creature->setFaction(113);
 
                 if (npc_escortAI* pEscortAI = CAST_AI(npc_ruul_snowhoofAI, (creature->AI())))
-                    pEscortAI->Start(true, false, player->GetGUID());
+                    pEscortAI->Start(true, false, player->GetGUID(), quest);
             }
 
             return true;
@@ -449,7 +449,7 @@ class npc_muglash : public CreatureScript
                     DoScriptText(SAY_MUG_START1, creature);
                     creature->setFaction(113);
 
-                    pEscortAI->Start(true, true, player->GetGUID());
+                    pEscortAI->Start(true, true, player->GetGUID(), quest);
                 }
             }
             return true;
