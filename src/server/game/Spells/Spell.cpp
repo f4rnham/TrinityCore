@@ -1357,6 +1357,11 @@ void Spell::SelectImplicitAreaTargets(SpellEffIndex effIndex, SpellImplicitTarge
 
         for (std::list<Unit*>::iterator itr = unitTargets.begin(); itr != unitTargets.end(); ++itr)
             AddUnitTarget(*itr, effMask, false);
+    } // spells which needs at least one target to continue with casting
+    else if (this->GetSpellInfo()->Id == 48743)
+    {
+        this->SendCastResult(SPELL_FAILED_NO_PET);
+        this->finish(false);
     }
 
     if (!gObjTargets.empty())
