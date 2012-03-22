@@ -201,7 +201,8 @@ public:
 
                         if (uiFlamesphereTimer <= diff)
                         {
-                            DoCast(me, SPELL_CONJURE_FLAME_SPHERE);
+                            // because TARGET_UNIT_TARGET_ENEMY we need a target selected to cast
+                            DoCast(me->getVictim(), SPELL_CONJURE_FLAME_SPHERE);
                             Phase = CASTING_FLAME_SPHERES;
                             uiPhaseTimer = 3*IN_MILLISECONDS + diff;
                             uiFlamesphereTimer = 15*IN_MILLISECONDS;
@@ -387,23 +388,28 @@ class prince_taldaram_sphere : public GameObjectScript
 public:
     prince_taldaram_sphere() : GameObjectScript("prince_taldaram_sphere") { }
 
-    bool OnGossipHello(Player* /*player*/, GameObject* pGO)
+    bool OnGossipHello(Player* /*player*/, GameObject* go)
     {
-        InstanceScript* instance = pGO->GetInstanceScript();
+        InstanceScript* instance = go->GetInstanceScript();
         if (!instance)
             return true;
 
-        Creature* pPrinceTaldaram = Unit::GetCreature(*pGO, instance->GetData64(DATA_PRINCE_TALDARAM));
+        Creature* pPrinceTaldaram = Unit::GetCreature(*go, instance->GetData64(DATA_PRINCE_TALDARAM));
         if (pPrinceTaldaram && pPrinceTaldaram->isAlive())
         {
             // maybe these are hacks :(
-            pGO->SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_NOT_SELECTABLE);
-            pGO->SetGoState(GO_STATE_ACTIVE);
+            go->SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_NOT_SELECTABLE);
+            go->SetGoState(GO_STATE_ACTIVE);
 
-            switch (pGO->GetEntry())
+            switch (go->GetEntry())
             {
-                case GO_SPHERE1: instance->SetData(DATA_SPHERE1_EVENT, IN_PROGRESS); break;
-                case GO_SPHERE2: instance->SetData(DATA_SPHERE2_EVENT, IN_PROGRESS); break;
+                case GO_SPHERE1:
+                    instance->SetData(DATA_SPHERE1_EVENT, IN_PROGRESS);
+                    break;
+
+                case GO_SPHERE2:
+                    instance->SetData(DATA_SPHERE2_EVENT, IN_PROGRESS);
+                    break;
             }
 
             CAST_AI(boss_taldaram::boss_taldaramAI, pPrinceTaldaram->AI())->CheckSpheres();

@@ -362,7 +362,9 @@ public:
     //Edit Player Spell
     static bool HandleModifySpellCommand(ChatHandler* handler, const char* args)
     {
-        if (!*args) return false;
+        if (!*args)
+            return false;
+
         char* pspellflatid = strtok((char*)args, " ");
         if (!pspellflatid)
             return false;
@@ -1143,10 +1145,10 @@ public:
 
     static bool HandleModifyRepCommand(ChatHandler* handler, const char* args)
     {
-        if (!*args) return false;
+        if (!*args)
+            return false;
 
         Player* target = handler->getSelectedPlayer();
-
         if (!target)
         {
             handler->SendSysMessage(LANG_PLAYER_NOT_FOUND);
