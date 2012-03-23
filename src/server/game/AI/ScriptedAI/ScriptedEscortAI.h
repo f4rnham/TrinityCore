@@ -118,6 +118,7 @@ struct npc_escortAI : public ScriptedAI
 
         bool m_bIsActiveAttacker;                           //obsolete, determined by faction.
         bool m_bIsRunning;                                  //all creatures are walking by default (has flag MOVEMENTFLAG_WALK)
+        bool m_bCanInstantRespawn;                          //if creature should respawn instantly after escort over (if not, database respawntime are used)
         bool m_bCanReturnToStart;                           //if creature can walk same path (loop) without despawn. Not for regular escort quests.
         bool DespawnAtEnd;
         bool DespawnAtFar;

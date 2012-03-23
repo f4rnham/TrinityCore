@@ -29,6 +29,7 @@ npc_escortAI::npc_escortAI(Creature* creature) : ScriptedAI(creature),
     m_pQuestForEscort(NULL),
     m_bIsActiveAttacker(true),
     m_bIsRunning(false),
+    m_bCanInstantRespawn(false),
     m_bCanReturnToStart(false),
     DespawnAtEnd(true),
     DespawnAtFar(true),
@@ -230,7 +231,14 @@ void npc_escortAI::UpdateAI(uint32 const diff)
                         return;
                     }
 
-                    me->Kill(me, false);
+                    if (m_bCanInstantRespawn)
+                    {
+                        me->setDeathState(JUST_DIED);
+                        me->Respawn();
+                    }
+                    else
+                        me->DespawnOrUnsummon();
+
                     return;
                 }
                 else
@@ -264,7 +272,14 @@ void npc_escortAI::UpdateAI(uint32 const diff)
             {
                 sLog->outDebug(LOG_FILTER_TSCR, "TSCR: EscortAI failed because player/group was to far away or not found");
 
-                me->Kill(me, false);
+                if (m_bCanInstantRespawn)
+                {
+                    me->setDeathState(JUST_DIED);
+                    me->Respawn();
+                }
+                else
+                    me->DespawnOrUnsummon();
+
                 return;
             }
 
@@ -435,13 +450,8 @@ void npc_escortAI::Start(bool isActiveAttacker /* = true*/, bool run /* = false 
     m_uiPlayerGUID = playerGUID;
     m_pQuestForEscort = quest;
 
+    m_bCanInstantRespawn = instantRespawn;
     m_bCanReturnToStart = canLoopPath;
-
-    if (instantRespawn)
-    {
-        me->SetCorpseDelay(1);
-        me->SetRespawnDelay(1);
-    }
 
     if (me->GetMotionMaster()->GetCurrentMovementGeneratorType() == WAYPOINT_MOTION_TYPE)
     {
