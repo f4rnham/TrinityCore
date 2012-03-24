@@ -272,6 +272,9 @@ void npc_escortAI::UpdateAI(uint32 const diff)
             {
                 sLog->outDebug(LOG_FILTER_TSCR, "TSCR: EscortAI failed because player/group was to far away or not found");
 
+                // fail quest
+                me->AI()->JustDied(me);
+
                 if (m_bCanInstantRespawn)
                 {
                     me->setDeathState(JUST_DIED);
