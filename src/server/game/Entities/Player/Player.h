@@ -2493,7 +2493,6 @@ class Player : public Unit, public GridObject<Player>
         Unit* m_autoTarget;
         void autoAction();
 
-        #pragma region Player Movement        
         /*! These methods send different packets to the client in apply and unapply case.
             These methods are only sent to the current unit.
         */
@@ -2535,8 +2534,6 @@ class Player : public Unit, public GridObject<Player>
                 return modelData->CollisionHeight;
             }
         }
-        #pragma endregion Player Movement
-
 
     protected:
         // Gamemaster whisper whitelist
