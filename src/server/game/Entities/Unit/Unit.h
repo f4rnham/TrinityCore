@@ -1628,6 +1628,9 @@ class Unit : public WorldObject
         void SendMonsterMoveExitVehicle(Position const* newPos);
         //void SendMonsterMove(float NewPosX, float NewPosY, float NewPosZ, uint8 type, uint32 MovementFlags, uint32 Time, Player* player = NULL);
         void SendMonsterMoveTransport(Unit* vehicleOwner);
+        void SendMonsterMoveTransportV2();
+        Vector3 GetMonsterMoveTransportCoords();
+
         void SendMovementFlagUpdate();
 
         /*! These methods send the same packet to the client in apply and unapply case.

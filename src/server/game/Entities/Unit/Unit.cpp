@@ -446,6 +446,62 @@ void Unit::SendMonsterMoveTransport(Unit* vehicleOwner)
     SendMessageToSet(&data, true);
 }
 
+inline void operator << (ByteBuffer& b, const Vector3& v)
+{
+    b << v.x << v.y << v.z;
+}
+
+Vector3 Unit::GetMonsterMoveTransportCoords()
+{
+    Transport* t = GetTransport();
+
+    float To = t->GetOrientation();
+    float Tx = t->GetPositionX();
+    float Ty = t->GetPositionY();
+    float Tz = t->GetPositionZ();
+    float Ux = GetPositionX();
+    float Uy = GetPositionY();
+    float Uz = GetPositionZ();
+    float cosTo = cos(To);
+    float sinTo = sin(To);
+    float sinToM_PI = sin(To + M_PI);
+
+    Vector3 ret = Vector3(Ux, Uy, Uz);
+
+    ret.y = (cosTo * (Uy - Ty) + sinTo * (- Ux + Tx)) / (cosTo * cosTo - sinTo * sinToM_PI);
+
+    ret.x = (Ux - Tx - ret.y * sinToM_PI) / cosTo;
+
+    ret.z -= Tz;
+
+    sLog->outString("x %f", ret.x);
+    sLog->outString("y %f", ret.y);
+
+    return ret;
+}
+
+void Unit::SendMonsterMoveTransportV2()
+{
+    Transport* t = GetTransport();
+    WorldPacket data(SMSG_MONSTER_MOVE_TRANSPORT, GetPackGUID().size() + t->GetPackGUID().size() + 47);
+    data.append(GetPackGUID());
+    data.append(t->GetPackGUID());
+    data << int8(GetTransSeat());
+    data << uint8(0);
+
+    data << GetMonsterMoveTransportCoords();
+
+    data << uint32(getMSTime());                    // should be an increasing constant that indicates movement packet count
+    data << uint8(SPLINETYPE_FACING_ANGLE);
+    data << GetOrientation() - t->GetOrientation(); // facing angle?
+
+    data << uint32(SPLINEFLAG_TRANSPORT);
+    data << uint32(GetTransTime());                 // move time
+    data << uint32(1);                              // amount of waypoints
+    data << GetMonsterMoveTransportCoords();
+    SendMessageToSet(&data, true);
+}
+
 void Unit::resetAttackTimer(WeaponAttackType type)
 {
     m_attackTimer[type] = uint32(GetAttackTime(type) * m_modAttackSpeedPct[type]);
