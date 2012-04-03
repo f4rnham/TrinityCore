@@ -72,7 +72,9 @@ float baseMoveSpeed[MAX_MOVE_TYPE] =
     4.5f,                  // MOVE_FLIGHT_BACK
     3.14f                  // MOVE_PITCH_RATE
 };
-float playerBaseMoveSpeed[MAX_MOVE_TYPE] = {
+
+float playerBaseMoveSpeed[MAX_MOVE_TYPE] =
+{
     2.5f,                  // MOVE_WALK
     7.0f,                  // MOVE_RUN
     4.5f,                  // MOVE_RUN_BACK
@@ -606,7 +608,8 @@ void Unit::resetAttackTimer(WeaponAttackType type)
 
 bool Unit::IsWithinCombatRange(const Unit* obj, float dist2compare) const
 {
-    if (!obj || !IsInMap(obj)) return false;
+    if (!obj || !IsInMap(obj))
+        return false;
 
     float dx = GetPositionX() - obj->GetPositionX();
     float dy = GetPositionY() - obj->GetPositionY();
@@ -621,7 +624,8 @@ bool Unit::IsWithinCombatRange(const Unit* obj, float dist2compare) const
 
 bool Unit::IsWithinMeleeRange(const Unit* obj, float dist) const
 {
-    if (!obj || !IsInMap(obj)) return false;
+    if (!obj || !IsInMap(obj))
+        return false;
 
     float dx = GetPositionX() - obj->GetPositionX();
     float dy = GetPositionY() - obj->GetPositionY();
@@ -814,7 +818,7 @@ uint32 Unit::DealDamage(Unit* victim, uint32 damage, CleanDamage const* cleanDam
 
         duel_hasEnded = true;
     }
-    else if (victim->IsVehicle() && damage >= (health-1) && victim->GetCharmer() && victim->GetCharmer()->GetTypeId() ==  TYPEID_PLAYER)
+    else if (victim->IsVehicle() && damage >= (health-1) && victim->GetCharmer() && victim->GetCharmer()->GetTypeId() == TYPEID_PLAYER)
     {
         Player* victimRider = victim->GetCharmer()->ToPlayer();
 
@@ -3034,7 +3038,8 @@ void Unit::SetCurrentCastedSpell(Spell* pSpell)
 
     CurrentSpellTypes CSpellType = pSpell->GetCurrentContainer();
 
-    if (pSpell == m_currentSpells[CSpellType]) return;      // avoid breaking self
+    if (pSpell == m_currentSpells[CSpellType])             // avoid breaking self
+        return;
 
     // break same type spell if it is not delayed
     InterruptSpell(CSpellType, false);
@@ -3401,7 +3406,7 @@ void Unit::_ApplyAura(AuraApplication * aurApp, uint8 effMask)
     aura->HandleAuraSpecificMods(aurApp, caster, true, false);
 
     // apply effects of the aura
-    for (uint8 i = 0 ; i < MAX_SPELL_EFFECTS; ++i)
+    for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
     {
         if (effMask & 1<<i && (!aurApp->GetRemoveMode()))
             aurApp->_HandleEffect(i, true);
@@ -3460,7 +3465,7 @@ void Unit::_UnapplyAura(AuraApplicationMap::iterator &i, AuraRemoveMode removeMo
     aura->_UnapplyForTarget(this, caster, aurApp);
 
     // remove effects of the spell - needs to be done after removing aura from lists
-    for (uint8 itr = 0 ; itr < MAX_SPELL_EFFECTS; ++itr)
+    for (uint8 itr = 0; itr < MAX_SPELL_EFFECTS; ++itr)
     {
         if (aurApp->HasEffect(itr))
             aurApp->_HandleEffect(itr, false);
@@ -3637,7 +3642,7 @@ void Unit::RemoveAura(AuraApplication * aurApp, AuraRemoveMode mode)
     if (aurApp->GetRemoveMode())
     {
         // remove remaining effects of an aura
-        for (uint8 itr = 0 ; itr < MAX_SPELL_EFFECTS; ++itr)
+        for (uint8 itr = 0; itr < MAX_SPELL_EFFECTS; ++itr)
         {
             if (aurApp->HasEffect(itr))
                 aurApp->_HandleEffect(itr, false);
@@ -4575,9 +4580,7 @@ float Unit::GetTotalAuraMultiplierByMiscMask(AuraType auratype, uint32 misc_mask
     }
     // Add the highest of the Same Effect Stack Rule SpellGroups to the multiplier
     for (std::map<SpellGroup, int32>::const_iterator itr = SameEffectSpellGroup.begin(); itr != SameEffectSpellGroup.end(); ++itr)
-    {
         AddPctN(multiplier, itr->second);
-    }
 
     return multiplier;
 }
@@ -4612,27 +4615,39 @@ int32 Unit::GetMaxNegativeAuraModifierByMiscMask(AuraType auratype, uint32 misc_
 
 int32 Unit::GetTotalAuraModifierByMiscValue(AuraType auratype, int32 misc_value) const
 {
+    std::map<SpellGroup, int32> SameEffectSpellGroup;
     int32 modifier = 0;
 
     AuraEffectList const& mTotalAuraList = GetAuraEffectsByType(auratype);
     for (AuraEffectList::const_iterator i = mTotalAuraList.begin(); i != mTotalAuraList.end(); ++i)
     {
         if ((*i)->GetMiscValue() == misc_value)
-            modifier += (*i)->GetAmount();
+            if (!sSpellMgr->AddSameEffectStackRuleSpellGroups((*i)->GetSpellInfo(), (*i)->GetAmount(), SameEffectSpellGroup))
+                modifier += (*i)->GetAmount();
     }
+
+    for (std::map<SpellGroup, int32>::const_iterator itr = SameEffectSpellGroup.begin(); itr != SameEffectSpellGroup.end(); ++itr)
+        modifier += itr->second;
+
     return modifier;
 }
 
 float Unit::GetTotalAuraMultiplierByMiscValue(AuraType auratype, int32 misc_value) const
 {
+    std::map<SpellGroup, int32> SameEffectSpellGroup;
     float multiplier = 1.0f;
 
     AuraEffectList const& mTotalAuraList = GetAuraEffectsByType(auratype);
     for (AuraEffectList::const_iterator i = mTotalAuraList.begin(); i != mTotalAuraList.end(); ++i)
     {
         if ((*i)->GetMiscValue() == misc_value)
-            AddPctN(multiplier, (*i)->GetAmount());
+            if (!sSpellMgr->AddSameEffectStackRuleSpellGroups((*i)->GetSpellInfo(), (*i)->GetAmount(), SameEffectSpellGroup))
+                AddPctN(multiplier, (*i)->GetAmount());
     }
+    
+    for (std::map<SpellGroup, int32>::const_iterator itr = SameEffectSpellGroup.begin(); itr != SameEffectSpellGroup.end(); ++itr)
+        AddPctN(multiplier, itr->second);
+
     return multiplier;
 }
 
@@ -4666,27 +4681,39 @@ int32 Unit::GetMaxNegativeAuraModifierByMiscValue(AuraType auratype, int32 misc_
 
 int32 Unit::GetTotalAuraModifierByAffectMask(AuraType auratype, SpellInfo const* affectedSpell) const
 {
+    std::map<SpellGroup, int32> SameEffectSpellGroup;
     int32 modifier = 0;
 
     AuraEffectList const& mTotalAuraList = GetAuraEffectsByType(auratype);
     for (AuraEffectList::const_iterator i = mTotalAuraList.begin(); i != mTotalAuraList.end(); ++i)
     {
         if ((*i)->IsAffectedOnSpell(affectedSpell))
-            modifier += (*i)->GetAmount();
+            if (!sSpellMgr->AddSameEffectStackRuleSpellGroups((*i)->GetSpellInfo(), (*i)->GetAmount(), SameEffectSpellGroup))
+                modifier += (*i)->GetAmount();
     }
+    
+    for (std::map<SpellGroup, int32>::const_iterator itr = SameEffectSpellGroup.begin(); itr != SameEffectSpellGroup.end(); ++itr)
+        modifier += itr->second;
+
     return modifier;
 }
 
 float Unit::GetTotalAuraMultiplierByAffectMask(AuraType auratype, SpellInfo const* affectedSpell) const
 {
+    std::map<SpellGroup, int32> SameEffectSpellGroup;
     float multiplier = 1.0f;
 
     AuraEffectList const& mTotalAuraList = GetAuraEffectsByType(auratype);
     for (AuraEffectList::const_iterator i = mTotalAuraList.begin(); i != mTotalAuraList.end(); ++i)
     {
         if ((*i)->IsAffectedOnSpell(affectedSpell))
-            AddPctN(multiplier, (*i)->GetAmount());
+            if (!sSpellMgr->AddSameEffectStackRuleSpellGroups((*i)->GetSpellInfo(), (*i)->GetAmount(), SameEffectSpellGroup))
+                AddPctN(multiplier, (*i)->GetAmount());
     }
+
+    for (std::map<SpellGroup, int32>::const_iterator itr = SameEffectSpellGroup.begin(); itr != SameEffectSpellGroup.end(); ++itr)
+        AddPctN(multiplier, itr->second);
+
     return multiplier;
 }
 
@@ -4775,7 +4802,9 @@ GameObject* Unit::GetGameObject(uint32 spellId) const
 
 void Unit::AddGameObject(GameObject* gameObj)
 {
-    if (!gameObj || !gameObj->GetOwnerGUID() == 0) return;
+    if (!gameObj || !gameObj->GetOwnerGUID() == 0)
+        return;
+
     m_gameObj.push_back(gameObj);
     gameObj->SetOwnerGUID(GetGUID());
 
@@ -9169,10 +9198,10 @@ bool Unit::HandleProcTriggerSpell(Unit* victim, uint32 damage, AuraEffect* trigg
         case 70893:
         {
             // check if we're doing a critical hit
-            if (!(procSpell->SpellFamilyFlags[1] & 0x10000000) && (procEx != PROC_EX_CRITICAL_HIT) )
+            if (!(procSpell->SpellFamilyFlags[1] & 0x10000000) && (procEx != PROC_EX_CRITICAL_HIT))
                 return false;
             // check if we're procced by Claw, Bite or Smack (need to use the spell icon ID to detect it)
-            if (!(procSpell->SpellIconID == 262 || procSpell->SpellIconID == 1680 || procSpell->SpellIconID == 473 ))
+            if (!(procSpell->SpellIconID == 262 || procSpell->SpellIconID == 1680 || procSpell->SpellIconID == 473))
                 return false;
             break;
         }
@@ -12035,7 +12064,9 @@ float Unit::GetWeaponProcChance() const
 float Unit::GetPPMProcChance(uint32 WeaponSpeed, float PPM, const SpellInfo* spellProto) const
 {
     // proc per minute chance calculation
-    if (PPM <= 0) return 0.0f;
+    if (PPM <= 0)
+        return 0.0f;
+
     // Apply chance modifer aura
     if (spellProto)
         if (Player* modOwner = GetSpellModOwner())
@@ -12901,8 +12932,16 @@ void Unit::setDeathState(DeathState s)
         // remove aurastates allowing special moves
         ClearAllReactives();
         ClearDiminishings();
-        GetMotionMaster()->Clear(false);
-        GetMotionMaster()->MoveIdle();
+        if (IsInWorld())
+        {
+            // Only clear MotionMaster for entities that exists in world
+            // Avoids crashes in the following conditions :
+            //  * Using 'call pet' on dead pets
+            //  * Using 'call stabled pet'
+            //  * Logging in with dead pets
+            GetMotionMaster()->Clear(false);
+            GetMotionMaster()->MoveIdle();
+        }
         StopMoving();
         DisableSpline();
         // without this when removing IncreaseMaxHealth aura player may stuck with 1 hp
@@ -16603,7 +16642,41 @@ void Unit::SetPhaseMask(uint32 newPhaseMask, bool update)
         return;
 
     if (IsInWorld())
-        RemoveNotOwnSingleTargetAuras(newPhaseMask);        // we can lost access to caster or target
+    {
+        RemoveNotOwnSingleTargetAuras(newPhaseMask);            // we can lost access to caster or target
+
+        // modify hostile references for new phasemask, some special cases deal with hostile references themselves
+        if (GetTypeId() == TYPEID_UNIT || (!ToPlayer()->isGameMaster() && !ToPlayer()->GetSession()->PlayerLogout()))
+        {
+            HostileRefManager& refManager = getHostileRefManager();
+            HostileReference* ref = refManager.getFirst();
+
+            while (ref)
+            {
+                if (Unit* unit = ref->getSource()->getOwner())
+                    if (Creature* creature = unit->ToCreature())
+                        refManager.setOnlineOfflineState(creature, creature->InSamePhase(newPhaseMask));
+
+                ref = ref->next();
+            }
+
+            // modify threat lists for new phasemask
+            if (GetTypeId() != TYPEID_PLAYER)
+            {
+                std::list<HostileReference*> threatList = getThreatManager().getThreatList();
+                std::list<HostileReference*> offlineThreatList = getThreatManager().getOfflineThreatList();
+
+                // merge expects sorted lists
+                threatList.sort();
+                offlineThreatList.sort();
+                threatList.merge(offlineThreatList);
+
+                for (std::list<HostileReference*>::const_iterator itr = threatList.begin(); itr != threatList.end(); ++itr)
+                    if (Unit* unit = (*itr)->getTarget())
+                        unit->getHostileRefManager().setOnlineOfflineState(ToCreature(), unit->InSamePhase(newPhaseMask));
+            }
+        }
+    }
 
     WorldObject::SetPhaseMask(newPhaseMask, update);
 
@@ -17158,7 +17231,7 @@ void Unit::ExitVehicle(Position const* /*exitPosition*/)
     //! to specify exit coordinates and either store those per passenger, or we need to
     //! init spline movement based on those coordinates in unapply handlers, and
     //! relocate exiting passengers based on Unit::moveSpline data. Either way,
-    //! Coming Soon�
+    //! Coming Soon(TM)
 }
 
 void Unit::_ExitVehicle(Position const* exitPosition)

@@ -78,7 +78,7 @@
 #include "Warden.h"
 #include "CalendarMgr.h"
 
-volatile bool World::m_stopEvent = false;
+ACE_Atomic_Op<ACE_Thread_Mutex, bool> World::m_stopEvent = false;
 uint8 World::m_ExitCode = SHUTDOWN_EXIT_CODE;
 volatile uint32 World::m_worldLoopCounter = 0;
 
@@ -207,6 +207,7 @@ bool World::RemoveSession(uint32 id)
     {
         if (itr->second->PlayerLoading())
             return false;
+
         itr->second->KickPlayer();
     }
 
@@ -218,8 +219,7 @@ void World::AddSession(WorldSession* s)
     addSessQueue.add(s);
 }
 
-void
-World::AddSession_(WorldSession* s)
+void World::AddSession_(WorldSession* s)
 {
     ASSERT (s);
 
@@ -267,16 +267,13 @@ World::AddSession_(WorldSession* s)
     {
         AddQueuedPlayer (s);
         UpdateMaxSessionCounters();
-        sLog->outDetail ("PlayerQueue: Account id %u is in Queue Position (%u).", s->GetAccountId(), ++QueueSize);
+        sLog->outDetail("PlayerQueue: Account id %u is in Queue Position (%u).", s->GetAccountId(), ++QueueSize);
         return;
     }
 
     s->SendAuthResponse(AUTH_OK, true);
-
     s->SendAddonsInfo();
-
     s->SendClientCacheVersion(sWorld->getIntConfig(CONFIG_CLIENTCACHE_VERSION));
-
     s->SendTutorialsData();
 
     UpdateMaxSessionCounters();
@@ -287,7 +284,7 @@ World::AddSession_(WorldSession* s)
         float popu = (float)GetActiveSessionCount();              // updated number of users on the server
         popu /= pLimit;
         popu *= 2;
-        sLog->outDetail ("Server Population (%f).", popu);
+        sLog->outDetail("Server Population (%f).", popu);
     }
 }
 
@@ -1203,7 +1200,9 @@ void World::LoadConfigSettings(bool reload)
     m_bool_configs[CONFIG_PDUMP_NO_PATHS] = ConfigMgr::GetBoolDefault("PlayerDump.DisallowPaths", true);
     m_bool_configs[CONFIG_PDUMP_NO_OVERWRITE] = ConfigMgr::GetBoolDefault("PlayerDump.DisallowOverwrite", true);
 
-    sScriptMgr->OnConfigLoad(reload);
+    // call ScriptMgr if we're reloading the configuration
+    if (reload)
+        sScriptMgr->OnConfigLoad(reload);
 }
 
 extern void LoadGameObjectModelList();
@@ -1625,9 +1624,6 @@ void World::SetInitialWorldSettings()
     sLog->outString("Loading Autobroadcasts...");
     LoadAutobroadcasts();
 
-    sLog->outString("Loading Ip2nation...");
-    LoadIp2nation();
-
     ///- Load and initialize scripts
     sObjectMgr->LoadQuestStartScripts();                         // must be after load Creature/Gameobject(Template/Data) and QuestTemplate
     sObjectMgr->LoadQuestEndScripts();                           // must be after load Creature/Gameobject(Template/Data) and QuestTemplate
@@ -1659,6 +1655,7 @@ void World::SetInitialWorldSettings()
 
     sLog->outString("Initializing Scripts...");
     sScriptMgr->Initialize();
+    sScriptMgr->OnConfigLoad(false);                                // must be done after the ScriptMgr has been properly initialized
 
     sLog->outString("Validating spell scripts...");
     sObjectMgr->ValidateSpellScripts();
@@ -1672,18 +1669,10 @@ void World::SetInitialWorldSettings()
     ///- Initialize game time and timers
     sLog->outString("Initialize game time and timers");
     m_gameTime = time(NULL);
-    m_startTime=m_gameTime;
+    m_startTime = m_gameTime;
 
-    tm local;
-    time_t curr;
-    time(&curr);
-    local=*(localtime(&curr));                              // dereference and assign
-    char isoDate[128];
-    sprintf(isoDate, "%04d-%02d-%02d %02d:%02d:%02d",
-        local.tm_year+1900, local.tm_mon+1, local.tm_mday, local.tm_hour, local.tm_min, local.tm_sec);
-
-    LoginDatabase.PExecute("INSERT INTO uptime (realmid, starttime, startstring, uptime, revision) VALUES('%u', " UI64FMTD ", '%s', 0, '%s')",
-                            realmID, uint64(m_startTime), isoDate, _FULLVERSION);       // One-time query
+    LoginDatabase.PExecute("INSERT INTO uptime (realmid, starttime, uptime, revision) VALUES(%u, %u, 0, '%s')",
+                            realmID, uint32(m_startTime), _FULLVERSION);       // One-time query
 
     m_timers[WUPDATE_WEATHERS].SetInterval(1*IN_MILLISECONDS);
     m_timers[WUPDATE_AUCTIONS].SetInterval(MINUTE*IN_MILLISECONDS);
@@ -1778,7 +1767,7 @@ void World::SetInitialWorldSettings()
 
     uint32 startupDuration = GetMSTimeDiffToNow(startupBegin);
     sLog->outString();
-    sLog->outString("WORLD: World initialized in %u minutes %u seconds", (startupDuration / 60000), ((startupDuration % 60000) / 1000) );
+    sLog->outString("WORLD: World initialized in %u minutes %u seconds", (startupDuration / 60000), ((startupDuration % 60000) / 1000));
     sLog->outString();
 }
 
@@ -1884,23 +1873,6 @@ void World::LoadAutobroadcasts()
     sLog->outString();
 }
 
-void World::LoadIp2nation()
-{
-    uint32 oldMSTime = getMSTime();
-
-    QueryResult result = WorldDatabase.Query("SELECT count(c.code) FROM ip2nationCountries c, ip2nation i WHERE c.code = i.country");
-    uint32 count = 0;
-
-    if (result)
-    {
-        Field* fields = result->Fetch();
-        count = fields[0].GetUInt32();
-    }
-
-    sLog->outString(">> Loaded %u ip2nation definitions in %u ms", count, GetMSTimeDiffToNow(oldMSTime));
-    sLog->outString();
-}
-
 /// Update the World !
 void World::Update(uint32 diff)
 {
@@ -1985,10 +1957,10 @@ void World::Update(uint32 diff)
 
         PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_UPD_UPTIME_PLAYERS);
 
-        stmt->setUInt64(0, uint64(tmpDiff));
+        stmt->setUInt32(0, tmpDiff);
         stmt->setUInt16(1, uint16(maxOnlinePlayers));
         stmt->setUInt32(2, realmID);
-        stmt->setUInt64(3, uint64(m_startTime));
+        stmt->setUInt32(3, uint32(m_startTime));
 
         LoginDatabase.Execute(stmt);
     }
@@ -2470,7 +2442,7 @@ void World::_UpdateGameTime()
     m_gameTime = thisTime;
 
     ///- if there is a shutdown timer
-    if (!m_stopEvent && m_ShutdownTimer > 0 && elapsed > 0)
+    if (!IsStopped() && m_ShutdownTimer > 0 && elapsed > 0)
     {
         ///- ... and it is overdue, stop the world (set m_stopEvent)
         if (m_ShutdownTimer <= elapsed)
@@ -2494,7 +2466,7 @@ void World::_UpdateGameTime()
 void World::ShutdownServ(uint32 time, uint32 options, uint8 exitcode)
 {
     // ignore if server shutdown at next tick
-    if (m_stopEvent)
+    if (IsStopped())
         return;
 
     m_ShutdownMask = options;
@@ -2546,7 +2518,7 @@ void World::ShutdownMsg(bool show, Player* player)
 void World::ShutdownCancel()
 {
     // nothing cancel or too later
-    if (!m_ShutdownTimer || m_stopEvent)
+    if (!m_ShutdownTimer || m_stopEvent.value())
         return;
 
     ServerMessageType msgid = (m_ShutdownMask & SHUTDOWN_MASK_RESTART) ? SERVER_MSG_RESTART_CANCELLED : SERVER_MSG_SHUTDOWN_CANCELLED;
@@ -2670,7 +2642,7 @@ void World::_UpdateRealmCharCount(PreparedQueryResult resultCharCount)
     {
         Field* fields = resultCharCount->Fetch();
         uint32 accountId = fields[0].GetUInt32();
-        uint32 charCount = fields[1].GetUInt32();
+        uint8 charCount = uint8(fields[1].GetUInt64());
 
         PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_DEL_REALM_CHARACTERS_BY_REALM);
         stmt->setUInt32(0, accountId);
@@ -2678,7 +2650,7 @@ void World::_UpdateRealmCharCount(PreparedQueryResult resultCharCount)
         LoginDatabase.Execute(stmt);
 
         stmt = LoginDatabase.GetPreparedStatement(LOGIN_INS_REALM_CHARACTERS);
-        stmt->setUInt32(0, charCount);
+        stmt->setUInt8(0, charCount);
         stmt->setUInt32(1, accountId);
         stmt->setUInt32(2, realmID);
         LoginDatabase.Execute(stmt);
@@ -2954,7 +2926,7 @@ void World::LoadCharacterNameData()
 {
     sLog->outString("Loading character name data");
 
-    QueryResult result = CharacterDatabase.Query("SELECT guid, name, race, gender, class FROM characters");
+    QueryResult result = CharacterDatabase.Query("SELECT guid, name, race, gender, class FROM characters WHERE deleteDate IS NULL");
     if (!result)
     {
         sLog->outError("No character name data loaded, empty query");
@@ -2965,7 +2937,7 @@ void World::LoadCharacterNameData()
 
     do
     {
-        Field *fields = result->Fetch();
+        Field* fields = result->Fetch();
         AddCharacterNameData(fields[0].GetUInt32(), fields[1].GetString(),
             fields[3].GetUInt8() /*gender*/, fields[2].GetUInt8() /*race*/, fields[4].GetUInt8() /*class*/);
         ++count;
