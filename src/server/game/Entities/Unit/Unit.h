@@ -36,6 +36,7 @@
 #include "Path.h"
 #include "WorldPacket.h"
 #include "Timer.h"
+#include "Movement/Spline/MoveSpline.h"
 #include <list>
 
 #define WORLD_TRIGGER   12999
@@ -1628,8 +1629,9 @@ class Unit : public WorldObject
         void SendMonsterMoveExitVehicle(Position const* newPos);
         //void SendMonsterMove(float NewPosX, float NewPosY, float NewPosZ, uint8 type, uint32 MovementFlags, uint32 Time, Player* player = NULL);
         void SendMonsterMoveTransport(Unit* vehicleOwner);
-        void SendMonsterMoveTransportV2();
-        Vector3 GetMonsterMoveTransportCoords();
+        void SendMonsterMoveTransportV2(const Movement::MoveSpline& move_spline);
+        Vector3 GetMonsterMoveTransportCoords(Vector3 v);
+        void WriteLinearPathTransport(ByteBuffer& data, const Movement::Spline<int32>& spline);
 
         void SendMovementFlagUpdate();
 
@@ -2181,6 +2183,12 @@ class Unit : public WorldObject
         float GetTransOffsetY() const { return m_movementInfo.t_pos.GetPositionY(); }
         float GetTransOffsetZ() const { return m_movementInfo.t_pos.GetPositionZ(); }
         float GetTransOffsetO() const { return m_movementInfo.t_pos.GetOrientation(); }
+        void RelocateTransOffset(const Position* p)
+        {
+            m_movementInfo.t_pos.m_positionX = p->m_positionX;
+            m_movementInfo.t_pos.m_positionY = p->m_positionY;
+            m_movementInfo.t_pos.m_positionZ = p->m_positionZ;
+        }
         uint32 GetTransTime()   const { return m_movementInfo.t_time; }
         int8 GetTransSeat()     const { return m_movementInfo.t_seat; }
         uint64 GetTransGUID()   const;

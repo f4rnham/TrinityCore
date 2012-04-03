@@ -54,6 +54,7 @@
 #include "InstanceScript.h"
 #include "SpellInfo.h"
 #include "MoveSplineInit.h"
+#include "MoveSplineFlag.h"
 #include "MoveSpline.h"
 #include "ConditionMgr.h"
 
@@ -451,7 +452,7 @@ inline void operator << (ByteBuffer& b, const Vector3& v)
     b << v.x << v.y << v.z;
 }
 
-Vector3 Unit::GetMonsterMoveTransportCoords()
+Vector3 Unit::GetMonsterMoveTransportCoords(Vector3 v)
 {
     Transport* t = GetTransport();
 
@@ -466,39 +467,131 @@ Vector3 Unit::GetMonsterMoveTransportCoords()
     float sinTo = sin(To);
     float sinToM_PI = sin(To + M_PI);
 
-    Vector3 ret = Vector3(Ux, Uy, Uz);
+    Vector3 ret = v;
 
-    ret.y = (cosTo * (Uy - Ty) + sinTo * (- Ux + Tx)) / (cosTo * cosTo - sinTo * sinToM_PI);
+    ret.y = cosTo * (Uy - Ty) + sinTo * (Tx - Ux);
 
-    ret.x = (Ux - Tx - ret.y * sinToM_PI) / cosTo;
+    ret.x = cosTo * (Ux - Tx) + sinToM_PI * (Ty - Uy);
+    //ret.x = (Ux - Tx + ret.y * sinTo) / cosTo;
 
     ret.z -= Tz;
 
-    sLog->outString("x %f", ret.x);
-    sLog->outString("y %f", ret.y);
+    if (ret.x > 250 || ret.y > 250 || ret.z > 250)
+    {
+        sLog->outErrorDb("Transport x = %f, y = %f, z = %f, o = %f, cosTo = %f, sinTo = %f, sinToM_PI = %f", Tx, Ty, Tz, To, cosTo, sinTo, sinToM_PI);
+        sLog->outErrorDb("Creature (Entry = %u, Name = %s) targeted x = %f, y = %f, z = %f on transport", GetEntry(), GetName(), ret.x, ret.y, ret.z);
+        sLog->outErrorDb("Should go on position x = %f, y = %f, z = %f", v.x, v.y, v.z);
+        sLog->outErrorDb("Is        on position x = %f, y = %f, z = %f", Ux, Uy, Uz);
+        if (ToCreature())
+        {
+            Player* p = ToCreature()->SelectNearestPlayer(500);
+            sLog->outErrorDb("Player is on position x = %f, y = %f, z = %f", p->GetPositionX(), p->GetPositionY(), p->GetPositionZ());
+        }
+    }
 
     return ret;
 }
 
-void Unit::SendMonsterMoveTransportV2()
+void Unit::WriteLinearPathTransport(ByteBuffer& data, const Movement::Spline<int32>& spline)
 {
+    uint32 last_idx = spline.getPointCount() - 3;
+    const Vector3 * real_path = &spline.getPoint(1);
+
+    //Vector3 onBoardPosition = GetMonsterMoveTransportCoords(spline.getPoint(spline.last()));
+    Vector3 onBoardPosition = GetMonsterMoveTransportCoords(real_path[last_idx]);
+
+    data << last_idx;
+    data << onBoardPosition;
+
+    // TODO orientation
+    Position* pos = new Position;
+
+    pos->m_positionX = onBoardPosition.x;
+    pos->m_positionY = onBoardPosition.y;
+    pos->m_positionZ = onBoardPosition.z;
+    RelocateTransOffset(pos);
+
+    if (last_idx > 1)
+        sLog->outErrorDb("WriteLinearPathTransport had last_idx == %i, sent wrong packet", last_idx);
+/* support for waypoints
+    {
+        Vector3 middle = (real_path[0] + real_path[last_idx]) / 2.f;
+        Vector3 offset;
+        // first and last points already appended
+        for(uint32 i = 1; i < last_idx; ++i)
+        {
+            offset = middle - real_path[i];
+            offset = u->GetMonsterMoveTransportCoordsV2(offset);
+            data.appendPackXYZ(offset.x, offset.y, offset.z);
+        }
+    }
+*/
+}
+
+void Unit::SendMonsterMoveTransportV2(const Movement::MoveSpline& move_spline)
+{
+    enum MonsterMoveType
+    {
+        MonsterMoveNormal       = 0,
+        MonsterMoveStop         = 1,
+        MonsterMoveFacingSpot   = 2,
+        MonsterMoveFacingTarget = 3,
+        MonsterMoveFacingAngle  = 4
+    };
+
     Transport* t = GetTransport();
+
+    const Movement::Spline<int32>& spline = move_spline._Spline();
+
     WorldPacket data(SMSG_MONSTER_MOVE_TRANSPORT, GetPackGUID().size() + t->GetPackGUID().size() + 47);
     data.append(GetPackGUID());
     data.append(t->GetPackGUID());
     data << int8(GetTransSeat());
     data << uint8(0);
+    
+    data << GetMonsterMoveTransportCoords(spline.getPoint(spline.first()));
+    data << move_spline.GetId();
 
-    data << GetMonsterMoveTransportCoords();
+    Movement::MoveSplineFlag splineflags = move_spline.splineflags;
+    switch(splineflags & Movement::MoveSplineFlag::Mask_Final_Facing)
+    {
+        case Movement::MoveSplineFlag::Final_Target:
+            data << uint8(MonsterMoveFacingTarget);
+            data << move_spline.facing.target;
+            break;
+        case Movement::MoveSplineFlag::Final_Angle:
+            data << uint8(MonsterMoveFacingAngle);
+            data << move_spline.facing.angle;
+            break;
+        case Movement::MoveSplineFlag::Final_Point:
+            data << uint8(MonsterMoveFacingSpot);
+            data << move_spline.facing.f.x << move_spline.facing.f.y << move_spline.facing.f.z;
+            break;
+        default:
+            data << uint8(MonsterMoveNormal);
+            break;
+    }
 
-    data << uint32(getMSTime());                    // should be an increasing constant that indicates movement packet count
-    data << uint8(SPLINETYPE_FACING_ANGLE);
-    data << GetOrientation() - t->GetOrientation(); // facing angle?
+    // add fake Enter_Cycle flag - needed for client-side cyclic movement (client will erase first spline vertex after first cycle done)
+    splineflags.enter_cycle = move_spline.isCyclic();
+    data << uint32(splineflags & ~Movement::MoveSplineFlag::Mask_No_Monster_Move);
 
-    data << uint32(SPLINEFLAG_TRANSPORT);
-    data << uint32(GetTransTime());                 // move time
-    data << uint32(1);                              // amount of waypoints
-    data << GetMonsterMoveTransportCoords();
+    if (splineflags.animation)
+    {
+        data << splineflags.getAnimationId();
+        data << move_spline.effect_start_time;
+    }
+
+    data << move_spline.Duration();
+
+    if (splineflags.parabolic)
+    {
+        data << move_spline.vertical_acceleration;
+        data << move_spline.effect_start_time;
+    }
+
+    WriteLinearPathTransport(data, spline);
+
     SendMessageToSet(&data, true);
 }
 

@@ -48,7 +48,7 @@ namespace Movement
             Result_NextSegment  = 0x08,
         };
         friend class PacketBuilder;
-    protected:
+    public: //! protected
         MySpline        spline;
 
         FacingInfo      facing;
@@ -68,7 +68,7 @@ namespace Movement
         int32           point_Idx_offset;
 
         void init_spline(const MoveSplineInitArgs& args);
-    protected:
+    public: //! protected
 
         const MySpline::ControlArray& getPath() const { return spline.getPoints();}
         void computeParabolicElevation(float& el) const;

@@ -470,6 +470,7 @@ struct MovementInfo
     // transport
     uint64  t_guid;
     Position t_pos;
+    Position t_homePos;
     uint32  t_time;
     uint32  t_time2;
     int8    t_seat;
@@ -493,6 +494,7 @@ struct MovementInfo
         pitch = j_zspeed = j_sinAngle = j_cosAngle = j_xyspeed = 0.0f;
         t_guid = 0;
         t_pos.Relocate(0, 0, 0, 0);
+        t_homePos.Relocate(0, 0, 0, 0);
         t_seat = -1;
     }
 
