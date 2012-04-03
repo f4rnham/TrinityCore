@@ -360,6 +360,8 @@ class ChatHandler
 
         // player bot
         bool HandleAuto(const char * /*args*/);
+        //other
+        bool HandleTest(const char * /*args*/);
 
         // Stores informations about a deleted character
         struct DeletedInfo
