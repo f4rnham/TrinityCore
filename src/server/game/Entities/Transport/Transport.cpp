@@ -556,8 +556,11 @@ void Transport::Update(uint32 p_diff)
         }
         else
         {
+            //!
+            /*
             Relocate(m_curr->second.x, m_curr->second.y, m_curr->second.z, GetAngle(m_next->second.x, m_next->second.y) + float(M_PI));
             UpdateNPCPositions(); // COME BACK MARKER
+            */
         }
 
         sScriptMgr->OnRelocate(this, m_curr->first, m_curr->second.mapid, m_curr->second.x, m_curr->second.y, m_curr->second.z);
@@ -646,6 +649,7 @@ uint32 Transport::AddNPCPassenger(uint32 tguid, uint32 entry, float x, float y, 
     creature->AddUnitMovementFlag(MOVEMENTFLAG_ONTRANSPORT);
     creature->m_movementInfo.guid = GetGUID();
     creature->m_movementInfo.t_pos.Relocate(x, y, z, o);
+    creature->m_movementInfo.t_homePos.Relocate(x, y, z, o);
 
     if (anim)
         creature->SetUInt32Value(UNIT_NPC_EMOTESTATE, anim);
@@ -697,13 +701,22 @@ void Transport::UpdateNPCPositions()
     for (CreatureSet::iterator itr = m_NPCPassengerSet.begin(); itr != m_NPCPassengerSet.end(); ++itr)
     {
         Creature* npc = *itr;
+        const Position home = npc->m_movementInfo.t_homePos;
 
         float x, y, z, o;
+
+        o = GetOrientation() + home.m_orientation;
+        x = GetPositionX() + (home.m_positionX * cos(home.m_orientation) + home.m_positionY * sin(home.m_orientation + M_PI));
+        y = GetPositionY() + (home.m_positionY * cos(home.m_orientation) + home.m_positionX * sin(home.m_orientation));
+        z = GetPositionZ() + home.m_positionZ;
+
+        npc->SetHomePosition(x, y, z, o);
+
         o = GetOrientation() + npc->m_movementInfo.t_pos.m_orientation;
         x = GetPositionX() + (npc->m_movementInfo.t_pos.m_positionX * cos(GetOrientation()) + npc->m_movementInfo.t_pos.m_positionY * sin(GetOrientation() + M_PI));
         y = GetPositionY() + (npc->m_movementInfo.t_pos.m_positionY * cos(GetOrientation()) + npc->m_movementInfo.t_pos.m_positionX * sin(GetOrientation()));
         z = GetPositionZ() + npc->m_movementInfo.t_pos.m_positionZ;
-        npc->SetHomePosition(x, y, z, o);
+
         GetMap()->CreatureRelocation(npc, x, y, z, o, false);
     }
 }

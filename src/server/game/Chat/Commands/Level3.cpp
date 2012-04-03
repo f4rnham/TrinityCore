@@ -4781,3 +4781,40 @@ bool ChatHandler::HandleAuto(const char * /*args*/)
         player->Say("autopilot OFF",0);
     return true;
 }
+
+void convert(float arg, const char c[], Player* p)
+{
+    std::stringstream ss;
+    std::string s;
+    ss << arg;
+    s.append(c);
+    s.append(ss.str());
+    p->Say(s, 0);
+}
+
+bool ChatHandler::HandleTest(const char * args)
+{
+    Unit* target = getSelectedUnit();
+    Player* me = m_session->GetPlayer();
+
+    if (!target)
+        return false;
+
+    convert(target->GetTransOffsetX(), "x = ", me);
+
+    convert(target->GetTransOffsetY(), "y = ", me);
+
+    convert(target->GetTransOffsetZ(), "z = ", me);
+
+    if (target->ToCreature())
+    {
+        std::stringstream ss;
+        if(!target->movespline->Finalized())
+        {
+            ss << target->movespline->Duration();
+            target->MonsterSay(ss.str().c_str(),0,0);
+        }
+    }
+
+    return true;
+}

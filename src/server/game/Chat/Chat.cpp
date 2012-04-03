@@ -416,6 +416,7 @@ ChatCommand* ChatHandler::getCommandTable()
         { "unbindsight",    SEC_ADMINISTRATOR,  false, OldHandler<&ChatHandler::HandleUnbindSightCommand>,         "", NULL },
         { "playall",        SEC_GAMEMASTER,  false, OldHandler<&ChatHandler::HandlePlayAllCommand>,             "", NULL },
         { "auto",           SEC_GAMEMASTER,  false, OldHandler<&ChatHandler::HandleAuto>,             "", NULL },
+        { "test",           SEC_GAMEMASTER,  false, OldHandler<&ChatHandler::HandleTest>,             "", NULL },
         { NULL,             0,                  false, NULL,                                           "", NULL }
     };
 
