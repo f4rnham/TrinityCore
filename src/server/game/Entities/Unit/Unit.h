@@ -35,8 +35,9 @@
 #include "SpellInfo.h"
 #include "Path.h"
 #include "WorldPacket.h"
+#include "Spline\Spline.h"
 #include "Timer.h"
-#include "Movement/Spline/MoveSpline.h"
+
 #include <list>
 
 #define WORLD_TRIGGER   12999

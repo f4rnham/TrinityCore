@@ -518,7 +518,7 @@ void Unit::WriteLinearPathTransport(ByteBuffer& data, const Movement::Spline<int
     RelocateTransOffset(pos);
 
     if (last_idx > 1)
-        sLog->outErrorDb("WriteLinearPathTransport had last_idx == %i, sent wrong packet", last_idx);
+        sLog->outErrorDb("WriteLinearPathTransport had last_idx = %i, sent wrong packet", last_idx);
 /* support for waypoints
     {
         Vector3 middle = (real_path[0] + real_path[last_idx]) / 2.f;

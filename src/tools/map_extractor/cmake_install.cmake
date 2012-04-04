@@ -2,7 +2,7 @@
 
 # Set the install prefix
 IF(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  SET(CMAKE_INSTALL_PREFIX "C:/Program Files (x86)/TrinityCore")
+  SET(CMAKE_INSTALL_PREFIX "D:/trinity/live/bin")
 ENDIF(NOT DEFINED CMAKE_INSTALL_PREFIX)
 STRING(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
@@ -29,16 +29,16 @@ ENDIF(NOT CMAKE_INSTALL_COMPONENT)
 
 IF(NOT CMAKE_INSTALL_COMPONENT OR "${CMAKE_INSTALL_COMPONENT}" STREQUAL "Unspecified")
   IF("${CMAKE_INSTALL_CONFIG_NAME}" MATCHES "^([Dd][Ee][Bb][Uu][Gg])$")
-    FILE(INSTALL DESTINATION "C:/Program Files (x86)/TrinityCore" TYPE EXECUTABLE FILES "D:/trinity/live/bin/Debug/mapextractor.exe")
+    FILE(INSTALL DESTINATION "D:/trinity/live/bin" TYPE EXECUTABLE FILES "D:/trinity/live/bin/Debug/mapextractor.exe")
   ENDIF("${CMAKE_INSTALL_CONFIG_NAME}" MATCHES "^([Dd][Ee][Bb][Uu][Gg])$")
   IF("${CMAKE_INSTALL_CONFIG_NAME}" MATCHES "^([Rr][Ee][Ll][Ee][Aa][Ss][Ee])$")
-    FILE(INSTALL DESTINATION "C:/Program Files (x86)/TrinityCore" TYPE EXECUTABLE FILES "D:/trinity/live/bin/Release/mapextractor.exe")
+    FILE(INSTALL DESTINATION "D:/trinity/live/bin" TYPE EXECUTABLE FILES "D:/trinity/live/bin/Release/mapextractor.exe")
   ENDIF("${CMAKE_INSTALL_CONFIG_NAME}" MATCHES "^([Rr][Ee][Ll][Ee][Aa][Ss][Ee])$")
   IF("${CMAKE_INSTALL_CONFIG_NAME}" MATCHES "^([Mm][Ii][Nn][Ss][Ii][Zz][Ee][Rr][Ee][Ll])$")
-    FILE(INSTALL DESTINATION "C:/Program Files (x86)/TrinityCore" TYPE EXECUTABLE FILES "D:/trinity/live/bin/MinSizeRel/mapextractor.exe")
+    FILE(INSTALL DESTINATION "D:/trinity/live/bin" TYPE EXECUTABLE FILES "D:/trinity/live/bin/MinSizeRel/mapextractor.exe")
   ENDIF("${CMAKE_INSTALL_CONFIG_NAME}" MATCHES "^([Mm][Ii][Nn][Ss][Ii][Zz][Ee][Rr][Ee][Ll])$")
   IF("${CMAKE_INSTALL_CONFIG_NAME}" MATCHES "^([Rr][Ee][Ll][Ww][Ii][Tt][Hh][Dd][Ee][Bb][Ii][Nn][Ff][Oo])$")
-    FILE(INSTALL DESTINATION "C:/Program Files (x86)/TrinityCore" TYPE EXECUTABLE FILES "D:/trinity/live/bin/RelWithDebInfo/mapextractor.exe")
+    FILE(INSTALL DESTINATION "D:/trinity/live/bin" TYPE EXECUTABLE FILES "D:/trinity/live/bin/RelWithDebInfo/mapextractor.exe")
   ENDIF("${CMAKE_INSTALL_CONFIG_NAME}" MATCHES "^([Rr][Ee][Ll][Ww][Ii][Tt][Hh][Dd][Ee][Bb][Ii][Nn][Ff][Oo])$")
 ENDIF(NOT CMAKE_INSTALL_COMPONENT OR "${CMAKE_INSTALL_COMPONENT}" STREQUAL "Unspecified")
 

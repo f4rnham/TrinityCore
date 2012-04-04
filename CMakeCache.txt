@@ -81,7 +81,7 @@ CMAKE_EXE_LINKER_FLAGS_RELEASE:STRING=/INCREMENTAL:NO
 CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO:STRING='/debug '
 
 //Install path prefix, prepended onto install directories.
-CMAKE_INSTALL_PREFIX:PATH=C:/Program Files (x86)/TrinityCore
+CMAKE_INSTALL_PREFIX:PATH=D:/trinity/live/bin
 
 //Path to a program.
 CMAKE_LINKER:FILEPATH=CMAKE_LINKER-NOTFOUND
