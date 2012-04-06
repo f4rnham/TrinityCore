@@ -1,9 +1,9 @@
-C:/Program Files (x86)/TrinityCore/ace.dll
-C:/Program Files (x86)/TrinityCore/libmysql.dll
-C:/Program Files (x86)/TrinityCore/authserver.exe
-C:/Program Files (x86)/TrinityCore/authserver.conf.dist
-C:/Program Files (x86)/TrinityCore/worldserver.exe
-C:/Program Files (x86)/TrinityCore/worldserver.conf.dist
-C:/Program Files (x86)/TrinityCore/mapextractor.exe
-C:/Program Files (x86)/TrinityCore/vmap4assembler.exe
-C:/Program Files (x86)/TrinityCore/vmap4extractor.exe
+D:/trinity/live/bin/ace.dll
+D:/trinity/live/bin/libmysql.dll
+D:/trinity/live/bin/authserver.exe
+D:/trinity/live/bin/authserver.conf.dist
+D:/trinity/live/bin/worldserver.exe
+D:/trinity/live/bin/worldserver.conf.dist
+D:/trinity/live/bin/mapextractor.exe
+D:/trinity/live/bin/vmap4assembler.exe
+D:/trinity/live/bin/vmap4extractor.exe

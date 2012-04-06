@@ -2184,6 +2184,7 @@ class Unit : public WorldObject
         float GetTransOffsetY() const { return m_movementInfo.t_pos.GetPositionY(); }
         float GetTransOffsetZ() const { return m_movementInfo.t_pos.GetPositionZ(); }
         float GetTransOffsetO() const { return m_movementInfo.t_pos.GetOrientation(); }
+        const Position GetTransOffset() const { return m_movementInfo.t_pos; };
         void RelocateTransOffset(const Position* p)
         {
             m_movementInfo.t_pos.m_positionX = p->m_positionX;

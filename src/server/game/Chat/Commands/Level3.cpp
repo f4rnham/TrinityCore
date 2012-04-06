@@ -63,6 +63,7 @@
 #include "SmartAI.h"
 #include "Group.h"
 #include "ChannelMgr.h"
+#include "Spline.h"
 
 bool ChatHandler::HandleMaxSkillCommand(const char* /*args*/)
 {
@@ -4810,11 +4811,11 @@ bool ChatHandler::HandleTest(const char * args)
     if (target->ToCreature())
     {
         std::stringstream ss;
-        if(!target->movespline->Finalized())
+        /*if(!target->movespline->Finalized())
         {
             ss << target->movespline->Duration();
             target->MonsterSay(ss.str().c_str(),0,0);
-        }
+        }*/
     }
 
     return true;
