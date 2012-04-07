@@ -34,6 +34,7 @@ enum PriestSpells
     PRIEST_SPELL_PENANCE_R1_HEAL                = 47757,
     PRIEST_SPELL_REFLECTIVE_SHIELD_TRIGGERED    = 33619,
     PRIEST_SPELL_REFLECTIVE_SHIELD_R1           = 33201,
+    PRIEST_SPELL_2pT9_SET_HEAL_BONUS_AURA       = 67201
 };
 
 // Guardian Spirit
@@ -291,6 +292,40 @@ class spell_pri_reflective_shield_trigger : public SpellScriptLoader
         }
 };
 
+class spell_pri_2pT9setHealing : public SpellScriptLoader
+{
+    public:
+        spell_pri_2pT9setHealing() : SpellScriptLoader("spell_pri_2pT9setHealing") { }
+
+        class spell_pri_2pT9setHealing_SpellScript : public SpellScript
+        {
+            PrepareSpellScript(spell_pri_2pT9setHealing_SpellScript);
+
+            bool Validate(SpellInfo const* spellEntry)
+            {
+                if (!sSpellMgr->GetSpellInfo(PRIEST_SPELL_2pT9_SET_HEAL_BONUS_AURA))
+                    return false;
+                return true;
+            }
+
+            void onHit()
+            {
+                if (GetOriginalCaster()->HasAura(PRIEST_SPELL_2pT9_SET_HEAL_BONUS_AURA))
+                    SetHitHeal(GetHitHeal() * 1.2f);
+            }
+
+            void Register()
+            {
+                OnHit += SpellHitFn(spell_pri_2pT9setHealing_SpellScript::onHit);
+            }
+        };
+
+        SpellScript* GetSpellScript() const
+        {
+            return new spell_pri_2pT9setHealing_SpellScript;
+        }
+};
+
 void AddSC_priest_spell_scripts()
 {
     new spell_pri_guardian_spirit();
@@ -299,4 +334,5 @@ void AddSC_priest_spell_scripts()
     new spell_pri_penance;
     new spell_pri_reflective_shield_trigger();
     new spell_pri_mind_sear();
+    new spell_pri_2pT9setHealing();
 }
