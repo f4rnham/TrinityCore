@@ -13990,7 +13990,7 @@ void Player::ApplyEnchantment(Item* item, EnchantmentSlot slot, bool apply, bool
                             ApplyRatingMod(CR_CRIT_SPELL, enchant_amount, apply);
                             sLog->outDebug(LOG_FILTER_PLAYER_ITEMS, "+ %u SPELL_CRIT", enchant_amount);
                             break;
-//                        Values from ITEM_STAT_MELEE_HA_RATING to ITEM_MOD_HASTE_RANGED_RATING are never used
+//                        Values from ITEM_MOD_HIT_TAKEN_MELEE_RATING to TEM_MOD_HASTE_MELEE_RATING are never used
 //                        in Enchantments
 //                        case ITEM_MOD_HIT_TAKEN_MELEE_RATING:
 //                            ApplyRatingMod(CR_HIT_TAKEN_MELEE, enchant_amount, apply);
@@ -14013,9 +14013,9 @@ void Player::ApplyEnchantment(Item* item, EnchantmentSlot slot, bool apply, bool
 //                        case ITEM_MOD_HASTE_MELEE_RATING:
 //                            ApplyRatingMod(CR_HASTE_MELEE, enchant_amount, apply);
 //                            break;
-//                        case ITEM_MOD_HASTE_RANGED_RATING:
-//                            ApplyRatingMod(CR_HASTE_RANGED, enchant_amount, apply);
-//                            break;
+                        case ITEM_MOD_HASTE_RANGED_RATING:
+                            ApplyRatingMod(CR_HASTE_RANGED, enchant_amount, apply);
+                            break;
                         case ITEM_MOD_HASTE_SPELL_RATING:
                             ApplyRatingMod(CR_HASTE_SPELL, enchant_amount, apply);
                             break;
